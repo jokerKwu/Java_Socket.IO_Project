@@ -7,7 +7,7 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ComboBox?>
  
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="200" prefWidth="300">
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="400" prefWidth="800">
     <top>
         <ToolBar>
             <items>

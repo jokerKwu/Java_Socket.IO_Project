@@ -17,3 +17,7 @@
 .text-area .scroll-pane .content{
 	-fx-background-color: transparent;
 }
+
+#clientLog{
+	-fx-font-size:20;
+}

@@ -16,4 +16,9 @@
 /*content ¹è°æ»ö*/
 .text-area .scroll-pane .content{
 	-fx-background-color: transparent;
+	
+}
+
+#serverLong {
+	 -fx-font-size:20;
 }
