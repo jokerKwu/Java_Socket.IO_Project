@@ -1,6 +1,7 @@
 /*text-area 배경색*/
 .text-area {
-	-fx-background-color: blanchedalmond;
+	-fx-background-color: transparent;
+	
 }
 
 /*scroll-pane 배경색*/
@@ -16,4 +17,10 @@
 /*content 배경색*/
 .text-area .scroll-pane .content{
 	-fx-background-color: transparent;
+}
+
+#clientLog{
+	-fx-text-fill:black;
+	-fx-font-size:20;
+	
 }

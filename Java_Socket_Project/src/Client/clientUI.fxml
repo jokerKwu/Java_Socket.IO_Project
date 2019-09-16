@@ -7,22 +7,22 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ComboBox?>
  
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="200" prefWidth="300">
+<BorderPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.ClientController" prefHeight="400" prefWidth="700">
     <top>
         <ToolBar>
             <items>
-                <Button text="join" />
-                <Button text="receive" />
+                <Button fx:id="connBtn" text="connect" />
+                <Button fx:id="receiveBtn" text="receive" disable="true"/>
             </items>
         </ToolBar>
     </top>
     <center>
-        <TextArea />
+        <TextArea fx:id="clientLog" disable="true"/>
     </center>
     <bottom>
         <BorderPane>
         	<left>
-    		<ComboBox fx:id="combobox" layoutX="74.0" layoutY="106.0"  prefWidth="60.0" promptText="User" >
+    		<ComboBox fx:id="uidComboBox" layoutX="74.0" layoutY="106.0"  prefWidth="60.0" promptText="User" >
           <!-- <items>
             <FXCollections fx:factory="observableArrayList"  >
                 <String fx:value="Item 1" />
@@ -35,10 +35,10 @@
 
         	</left>
             <center>
-                <TextField fx:id="clientLog" disable="true"/>
+                <TextField fx:id="clientInput" />
             </center>        
             <right>
-                <Button text="send" />
+                <Button fx:id="sendBtn" text="send" disable="true" />
             </right>
         </BorderPane>
     </bottom>
