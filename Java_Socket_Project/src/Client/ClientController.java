@@ -34,7 +34,16 @@ public class ClientController implements Initializable{
 		
 		
 		connBtn.setOnAction(event->handleClientBtnAction(event));
-
+		
+		sendBtn.setOnAction(event->handleClientMessageSendAction(event));
+	}
+	
+	public void handleClientMessageSendAction(ActionEvent event) {
+		String text="";
+		if(clientInput.getText()!=null) {
+			text=clientInput.getText();
+			send(text);
+		}
 	}
 	
 	public void handleClientBtnAction(ActionEvent event) {
@@ -56,6 +65,7 @@ public class ClientController implements Initializable{
 						connBtn.setText("disconnect");
 				        sendBtn.setDisable(false);
 				        receiveBtn.setDisable(false);
+				        clientInput.setDisable(false);
 				        
 					});
 				} catch(Exception e) {
