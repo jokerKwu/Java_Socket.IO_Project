@@ -8,7 +8,8 @@
 <?import javafx.scene.control.ComboBox?>
  
 
-<BorderPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.ClientController" prefHeight="400" prefWidth="700">
+<BorderPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.ClientController" prefHeight="400" prefWidth="800">
+
     <top>
         <ToolBar>
             <items>
@@ -18,8 +19,9 @@
         </ToolBar>
     </top>
     <center>
+
         <TextArea fx:id="clientLog" disable="true"/>
-    </center>
+
     <bottom>
         <BorderPane>
         	<left>
@@ -40,6 +42,7 @@
             </center>        
             <right>
                 <Button fx:id="sendBtn" text="send" disable="true" />
+
             </right>
         </BorderPane>
     </bottom>
