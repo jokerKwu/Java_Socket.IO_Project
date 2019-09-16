@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ 
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ComboBox?>
+ 
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="200" prefWidth="300">
+    <top>
+        <ToolBar>
+            <items>
+                <Button text="join" />
+                <Button text="receive" />
+            </items>
+        </ToolBar>
+    </top>
+    <center>
+        <TextArea />
+    </center>
+    <bottom>
+        <BorderPane>
+        	<left>
+    		<ComboBox fx:id="combobox" layoutX="74.0" layoutY="106.0"  prefWidth="60.0" promptText="User" >
+          <!-- <items>
+            <FXCollections fx:factory="observableArrayList"  >
+                <String fx:value="Item 1" />
+                <String fx:value="Item 2" />
+                <String fx:value="Item 3" />
+                <String fx:value="Item 4" />
+            </FXCollections>        
+          </items> -->
+         	</ComboBox>
+
+        	</left>
+            <center>
+                <TextField fx:id="clientLog" disable="true"/>
+            </center>        
+            <right>
+                <Button text="send" />
+            </right>
+        </BorderPane>
+    </bottom>
+</BorderPane>
+
