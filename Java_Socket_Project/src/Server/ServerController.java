@@ -175,11 +175,9 @@ public class ServerController implements Initializable {
 						}
 					} catch (Exception e) {
 						try {
-<<<<<<< HEAD
 
-=======
 							//클라이언트가 종료됐을때
->>>>>>> joker
+
 							hm.remove(Client.this.userID);
 							connections.remove(Client.this);
 
@@ -188,16 +186,6 @@ public class ServerController implements Initializable {
 									+ Thread.currentThread().getName() + "]";
 							Platform.runLater(() -> serverLogText(message));
 
-<<<<<<< HEAD
-
-
-=======
-							String connList=getConnectedList();
-							for(Client client:connections) {
-								client.send(connList);
-							}
-							
->>>>>>> joker
 							socket.close();
 						} catch (IOException e2) {
 						}
@@ -305,13 +293,8 @@ public class ServerController implements Initializable {
 			connectionList.appendText(userID + "\n");
 		}
 	}
-<<<<<<< HEAD
 
-
-=======
-	
 	//서버 접속자 가져오기
->>>>>>> joker
 	String getConnectedList() {
 		String res = "connList//";
 		Iterator<String> keys = hm.keySet().iterator();
