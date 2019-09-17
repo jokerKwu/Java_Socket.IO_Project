@@ -35,22 +35,23 @@ public class ClientController implements Initializable {
 	private Button sendBtn;
 	@FXML
 	private TextField userIdInput;
-	
+
 	private ObservableList<String> comboBoxList = FXCollections.observableArrayList("모두에게");
-	Socket socket;
 	private String opponentUserID;
+	Socket socket;
 	
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 		
-		uidComboBox.setItems(comboBoxList);
+		opponentUserID="모두에게";
 		
+		uidComboBox.setItems(comboBoxList);
+
 		connBtn.setOnAction(event -> handleClientBtnAction(event));
 
 		sendBtn.setOnAction(event -> handleClientMessageSendAction(event));
-		
-		receiveBtn.setOnAction(event->handleClientMessageReceiveAction(event));
-		
+
+		receiveBtn.setOnAction(event -> handleClientMessageReceiveAction(event));
 	}
 
 	public void handleClientMessageReceiveAction(ActionEvent event) {
@@ -63,10 +64,11 @@ public class ClientController implements Initializable {
 		String text = "";
 		if (clientInput.getText() != null) {
 			text = clientInput.getText();
-			String data=stringProcess("send",text);
+			String data = stringProcess("send", text);
 			send(data);
 		}
 	}
+
 
 	public void handleClientBtnAction(ActionEvent event) {
 		if (connBtn.getText().equals("connect")) {
@@ -81,18 +83,18 @@ public class ClientController implements Initializable {
 	}
 	// 클라이언트 프로그램의 작동을 시작하는 메소드
 	void startClient() {
-		
+
 		Thread thread = new Thread() {
 			@Override
 			public void run() {
 				try {
 					socket = new Socket();
-					
+
 					String userId;
-					
-					userId=stringProcess("id",userIdInput.getText());
+
+					userId = stringProcess("id", userIdInput.getText());
 					// 서버 연결 시도 서버 연결 성공
-					if(userIdInput.getText().length()!=0&&!userIdInput.getText().equals("아이디 입력")) {
+					if (userIdInput.getText().length() != 0 && !userIdInput.getText().equals("아이디 입력")) {
 						socket.connect(new InetSocketAddress("localhost", 5001));
 						Platform.runLater(() -> {
 							displayText("[연결 완료: " + socket.getRemoteSocketAddress() + "]");
@@ -104,13 +106,15 @@ public class ClientController implements Initializable {
 						send(userId);
 						userIdInput.setDisable(true);
 					}
-					//서버 연결 실패
+					// 서버 연결 실패
 					else {
-						Platform.runLater(()->displayText("[연결 실패] 아이디 입력해주세요."));
+						Platform.runLater(() -> displayText("[연결 실패] 아이디 입력해주세요."));
 					}
-				} catch(Exception e) {
-					Platform.runLater(()->displayText("[서버 통신 안됨]"));
-					if(!socket.isClosed()) { stopClient(); }
+				} catch (Exception e) {
+					Platform.runLater(() -> displayText("[서버 통신 안됨]"));
+					if (!socket.isClosed()) {
+						stopClient();
+					}
 					return;
 				}
 				receive();
@@ -187,20 +191,20 @@ public class ClientController implements Initializable {
 		clientLog.appendText(text + "\n");
 	}
 
-	String stringProcess(String cmd,String msg) {
+	String stringProcess(String cmd, String msg) {
 		String res = new String();
 		switch (cmd) {
-			case "id":
-				res = "id//";
-				break;
-			case "send":
-				res = "send//";
-				res+=opponentUserID+"//";
-				break;
-			case "receive":
-				res = "receive//";
-				break;
+		case "id":
+			res = "id//";
+			break;
+		case "send":
+			res = "send//";
+			res += opponentUserID + "//";
+			break;
+		case "receive":
+			res = "receive//";
+			break;
 		}
-		return res+msg;
+		return res + msg;
 	}
 }

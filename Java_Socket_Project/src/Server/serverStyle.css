@@ -20,7 +20,7 @@
 }
 
 #serverLog {
-	-fx-font-size: 20;
+	-fx-font-size: 20.0;
 	-fx-text-fill: black;
 }
 #connectionList{

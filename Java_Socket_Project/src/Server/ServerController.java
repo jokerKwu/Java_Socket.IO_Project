@@ -162,22 +162,24 @@ public class ServerController implements Initializable {
 							if (strArr[0].equals("id")) {
 								setUserID(strArr[1]);
 							}
+
 							// 클라이언트한테 전달받은 메시지 처리
 							receiveMessageProcess(data);
 
 						}
 					} catch (Exception e) {
 						try {
-							if (Client.this.userID.equals("조현준"))
-								System.out.println("모여 시바");
+
 							hm.remove(Client.this.userID);
 							connections.remove(Client.this);
-							
+
 							Platform.runLater(() -> connectedListText());
 							String message = "[2.클라이언트 통신 안됨: " + socket.getRemoteSocketAddress() + ": "
 									+ Thread.currentThread().getName() + "]";
 							Platform.runLater(() -> serverLogText(message));
-							
+
+
+
 							socket.close();
 						} catch (IOException e2) {
 						}
@@ -234,7 +236,6 @@ public class ServerController implements Initializable {
 				break;
 			// 클라이언트가 메시지 전달
 			case "send":
-
 				if (strArr[1].equals("모두에게")) {
 					for (Client client : connections)
 						client.db.add(strArr[2]);
@@ -244,9 +245,7 @@ public class ServerController implements Initializable {
 							client.db.add(strArr[2]);
 					}
 				}
-
 				break;
-
 			// 클라이언트 메시지 받는다.
 			case "receive":
 
@@ -278,12 +277,14 @@ public class ServerController implements Initializable {
 			connectionList.appendText(userID + "\n");
 		}
 	}
+
+
 	String getConnectedList() {
-		String res="connList//";
-		Iterator<String> keys= hm.keySet().iterator();
-		while(keys.hasNext()) {
-			String userID=keys.next();
-			res+=userID+"//";
+		String res = "connList//";
+		Iterator<String> keys = hm.keySet().iterator();
+		while (keys.hasNext()) {
+			String userID = keys.next();
+			res += userID + "//";
 		}
 		return res;
 	}
