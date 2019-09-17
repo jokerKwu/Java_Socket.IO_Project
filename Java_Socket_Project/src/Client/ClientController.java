@@ -42,9 +42,9 @@ public class ClientController implements Initializable {
 	
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
-		
-		opponentUserID="모두에게";
-		
+
+		opponentUserID = "모두에게";
+
 		uidComboBox.setItems(comboBoxList);
 
 		connBtn.setOnAction(event -> handleClientBtnAction(event));
@@ -106,6 +106,7 @@ public class ClientController implements Initializable {
 						send(userId);
 						userIdInput.setDisable(true);
 					}
+					
 					// 서버 연결 실패
 					else {
 						Platform.runLater(() -> displayText("[연결 실패] 아이디 입력해주세요."));
@@ -155,14 +156,18 @@ public class ClientController implements Initializable {
 				}
 
 				String data = new String(byteArr, 0, readByteCount, "UTF-8");
-
-				Platform.runLater(() -> displayText("[받기 완료] " + data));
+				String[] strArr = data.split("//");
+				if (strArr[0].equals("connList")) {
+					comboBoxUpdate(data);
+				} else
+					Platform.runLater(() -> displayText("[받기 완료] " + data));
 			} catch (Exception e) {
 				Platform.runLater(() -> displayText("[서버 통신 안됨]"));
 				stopClient();
 				break;
 			}
 		}
+
 	}
 
 	// 서버로 메시지를 전송하는 메소드
@@ -190,7 +195,8 @@ public class ClientController implements Initializable {
 
 		clientLog.appendText(text + "\n");
 	}
-
+	
+	// 보낼 메시지 전처리 과정
 	String stringProcess(String cmd, String msg) {
 		String res = new String();
 		switch (cmd) {
@@ -206,5 +212,14 @@ public class ClientController implements Initializable {
 			break;
 		}
 		return res + msg;
+	}
+	// 콤보박스 업데이트하는 메소드
+	void comboBoxUpdate(String data) {
+		System.out.println(data);
+		uidComboBox.setItems(comboBoxList);
+		String[] item=data.split("//");
+		for(int i=1;i<item.length;i++) {
+			uidComboBox.getItems().add(item[i]);
+		}
 	}
 }
