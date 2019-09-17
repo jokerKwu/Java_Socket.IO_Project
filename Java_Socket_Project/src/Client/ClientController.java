@@ -9,11 +9,11 @@ import java.net.URL;
 import java.util.ResourceBundle;
 
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Alert.AlertType;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
@@ -38,20 +38,40 @@ public class ClientController implements Initializable {
 
 	Socket socket;
 
+	private ObservableList<String> comboBoxList = FXCollections.observableArrayList("모두에게");
+	private String opponentUserID;
+
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
+		
+		opponentUserID="모두에게";
+		
+		uidComboBox.setItems(comboBoxList);
 
 		connBtn.setOnAction(event -> handleClientBtnAction(event));
 
 		sendBtn.setOnAction(event -> handleClientMessageSendAction(event));
+
+		receiveBtn.setOnAction(event -> handleClientMessageReceiveAction(event));
+	}
+
+	public void handleClientMessageReceiveAction(ActionEvent event) {
+		String data = "";
+		data = stringProcess("receive", data);
+		send(data);
 	}
 
 	public void handleClientMessageSendAction(ActionEvent event) {
 		String text = "";
 		if (clientInput.getText() != null) {
 			text = clientInput.getText();
-			send(text);
+			String data = stringProcess("send", text);
+			send(data);
 		}
+	}
+
+	public void handleComboChange(ActionEvent event) {
+		opponentUserID = uidComboBox.getValue().toString();
 	}
 
 	public void handleClientBtnAction(ActionEvent event) {
@@ -64,18 +84,18 @@ public class ClientController implements Initializable {
 
 	// 클라이언트 프로그램의 작동을 시작하는 메소드
 	void startClient() {
-		
+
 		Thread thread = new Thread() {
 			@Override
 			public void run() {
 				try {
 					socket = new Socket();
-					
+
 					String userId;
-					
-					userId=stringProcess("id",userIdInput.getText());
+
+					userId = stringProcess("id", userIdInput.getText());
 					// 서버 연결 시도 서버 연결 성공
-					if(userIdInput.getText().length()!=0&&!userIdInput.getText().equals("아이디 입력")) {
+					if (userIdInput.getText().length() != 0 && !userIdInput.getText().equals("아이디 입력")) {
 						socket.connect(new InetSocketAddress("localhost", 5001));
 						Platform.runLater(() -> {
 							displayText("[연결 완료: " + socket.getRemoteSocketAddress() + "]");
@@ -87,13 +107,15 @@ public class ClientController implements Initializable {
 						send(userId);
 						userIdInput.setDisable(true);
 					}
-					//서버 연결 실패
+					// 서버 연결 실패
 					else {
-						Platform.runLater(()->displayText("[연결 실패] 아이디 입력해주세요."));
+						Platform.runLater(() -> displayText("[연결 실패] 아이디 입력해주세요."));
 					}
-				} catch(Exception e) {
-					Platform.runLater(()->displayText("[서버 통신 안됨]"));
-					if(!socket.isClosed()) { stopClient(); }
+				} catch (Exception e) {
+					Platform.runLater(() -> displayText("[서버 통신 안됨]"));
+					if (!socket.isClosed()) {
+						stopClient();
+					}
 					return;
 				}
 				receive();
@@ -170,19 +192,20 @@ public class ClientController implements Initializable {
 		clientLog.appendText(text + "\n");
 	}
 
-	String stringProcess(String cmd,String msg) {
+	String stringProcess(String cmd, String msg) {
 		String res = new String();
 		switch (cmd) {
-			case "id":
-				res = "id//";
-				break;
-			case "send":
-				res = "send//";
-				break;
-			case "receive":
-				res = "receive//";
-				break;
+		case "id":
+			res = "id//";
+			break;
+		case "send":
+			res = "send//";
+			res += opponentUserID + "//";
+			break;
+		case "receive":
+			res = "receive//";
+			break;
 		}
-		return res+msg;
+		return res + msg;
 	}
 }

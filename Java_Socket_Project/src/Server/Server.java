@@ -25,21 +25,20 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 public class Server extends Application {
-	
-	//UI 持失 五社球
+
+	// UI 持失 五社球
 	@Override
-	public void start(Stage primaryStage) throws Exception{
-		Parent root= (Parent)FXMLLoader.load(getClass().getResource("serverUI.fxml"));
-		Scene scene=new Scene(root);
+	public void start(Stage primaryStage) throws Exception {
+		Parent root = (Parent) FXMLLoader.load(getClass().getResource("serverUI.fxml"));
+		Scene scene = new Scene(root);
 		scene.getStylesheets().add(getClass().getResource("serverStyle.css").toString());
-		
+
 		primaryStage.setScene(scene);
 		primaryStage.setTitle("Server");
 		primaryStage.show();
 	}
-	
+
 	public static void main(String[] args) {
 		launch(args);
 	}
 }
-
