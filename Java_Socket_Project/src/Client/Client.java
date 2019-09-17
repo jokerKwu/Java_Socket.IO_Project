@@ -11,6 +11,7 @@ import javafx.stage.Stage;
 
 public class Client extends Application {
 	
+	// UI »ý¼º
 	@Override
 	public void start(Stage primaryStage) throws Exception{
 		Parent root= (Parent)FXMLLoader.load(getClass().getResource("clientUI.fxml"));

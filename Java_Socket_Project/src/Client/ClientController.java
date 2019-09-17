@@ -12,6 +12,8 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Alert;
 import  javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import  javafx.scene.control.TextArea;
@@ -54,21 +56,37 @@ public class ClientController implements Initializable{
 			stopClient();
 		}
 	}
+	
+	// 클라이언트 프로그램의 작동을 시작하는 메소드
 	void startClient() {
+		
 		Thread thread = new Thread() {
 			@Override
 			public void run() {
 				try {
 					socket = new Socket();
-					socket.connect(new InetSocketAddress("localhost", 5001));
-					Platform.runLater(()->{
-						displayText("[연결 완료: "  + socket.getRemoteSocketAddress() + "]");
-						connBtn.setText("disconnect");
-				        sendBtn.setDisable(false);
-				        receiveBtn.setDisable(false);
-				        clientInput.setDisable(false);
-				        
-					});
+					
+					String userId=userIdInput.getText().toString();
+					System.out.println(userId.length());
+					
+					// 서버와 연결 시도
+					// 서버 연결 성공
+					if(userId.length()!=0&&!userId.equals("아이디 입력")) {
+						socket.connect(new InetSocketAddress("localhost", 5001));
+						Platform.runLater(() -> {
+							displayText("[연결 완료: " + socket.getRemoteSocketAddress() + "]");
+							connBtn.setText("disconnect");
+							sendBtn.setDisable(false);
+							receiveBtn.setDisable(false);
+							clientInput.setDisable(false);
+						});
+						send(userId);
+						userIdInput.setDisable(true);
+					}
+					//서버 연결 실패
+					else {
+						Platform.runLater(()->displayText("[연결 실패] 아이디 입력해주세요."));
+					}
 				} catch(Exception e) {
 					Platform.runLater(()->displayText("[서버 통신 안됨]"));
 					if(!socket.isClosed()) { stopClient(); }
@@ -80,6 +98,7 @@ public class ClientController implements Initializable{
 		thread.start();
 	}
 	
+	// 클라이언트 프로그램의 작동을 종료하는 메소드
 	void stopClient() {
 		try {
 			Platform.runLater(()->{
@@ -87,12 +106,14 @@ public class ClientController implements Initializable{
 				connBtn.setText("connect");
 				sendBtn.setDisable(true);
 			});
+			userIdInput.setDisable(false);
 			if(socket!=null && !socket.isClosed()) {
 				socket.close();
 			}
 		} catch (IOException e) {}
 	}	
 	
+	// 서버로부터 메시지를 전달받는 메소드
 	void receive() {
 		while(true) {
 			try {
@@ -116,6 +137,7 @@ public class ClientController implements Initializable{
 		}
 	}
 	
+	// 서버로 메시지를 전송하는 메소드
 	void send(String data) {
 		Thread thread = new Thread() {
 			@Override
@@ -135,7 +157,7 @@ public class ClientController implements Initializable{
 		thread.start();
 	}
 
-
+	//클라이언트 로그창에 메시지 기록하는 메소드
 	void displayText(String text) {
 	
 		clientLog.appendText(text + "\n");

@@ -6,6 +6,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -23,11 +24,13 @@ import  javafx.scene.control.TextArea;
 public class ServerController implements Initializable{
 	@FXML private TextArea serverLog;
 	@FXML private Button serverBtn;
-	
+	@FXML private TextArea connectionList;
 	
 	ExecutorService executorService;
 	ServerSocket serverSocket;
 	List<Client> connections = new Vector<Client>();
+	HashMap<String,OutputStream> hm=new HashMap<String,OutputStream>();
+	
 	
 	@Override
 	public void initialize(URL location,ResourceBundle resources) {
@@ -45,7 +48,7 @@ public class ServerController implements Initializable{
 		}
 	}
 	
-	
+	//서버를 구동시켜 클라이언트의 연결을 기다리는 메소드
 	void startServer() {
 		executorService = Executors.newFixedThreadPool(
 			Runtime.getRuntime().availableProcessors()
@@ -59,22 +62,24 @@ public class ServerController implements Initializable{
 			return;
 		}
 		
+		// 클라이언트가 접속할 때까지 계속 기다리는 쓰레드
 		Runnable runnable = new Runnable() {
 			@Override
 			public void run() {
 				Platform.runLater(()->{
 					serverBtn.setText("stop");
-					displayText("[서버 시작]");
+					serverLogText("[서버 시작]");
 				});		
 				while(true) {
 					try {
+						//클라이언트 연결을 기다리고있다.
 						Socket socket = serverSocket.accept();
 						String message = "[연결 수락: " + socket.getRemoteSocketAddress()  + ": " + Thread.currentThread().getName() + "]";
-						Platform.runLater(()->displayText(message));
-		
+						Platform.runLater(()->serverLogText(message));
+					
 						Client client = new Client(socket);
 						connections.add(client);
-						Platform.runLater(()->displayText("[연결 개수: " + connections.size() + "]"));
+						Platform.runLater(()->serverLogText("[연결 개수: " + connections.size() + "]"));
 					} catch (Exception e) {
 						if(!serverSocket.isClosed()) { stopServer(); }
 						break;
@@ -86,33 +91,39 @@ public class ServerController implements Initializable{
 		executorService.submit(runnable);
 	}
 	
+	//서버의 작동을 중지시키는 메소드
 	void stopServer() {
 		try {
+			//현재 작동 중인 모든 소켓 닫기
 			Iterator<Client> iterator = connections.iterator();
 			while(iterator.hasNext()) {
 				Client client = iterator.next();
 				client.socket.close();
 				iterator.remove();
 			}
+			// 서버 소켓 객체 닫기
 			if(serverSocket!=null && !serverSocket.isClosed()) { 
 				serverSocket.close(); 
 			}
+			// 쓰레드 풀 종료하기
 			if(executorService!=null && !executorService.isShutdown()) { 
 				executorService.shutdown(); 
 			}
 			Platform.runLater(()->{
-				displayText("[서버 멈춤]");
+				serverLogText("[서버 멈춤]");
 				serverBtn.setText("start");
 			});
 		} catch (Exception e) { }
 	}	
 	
 	class Client {
-		Socket socket;
-		
+		Socket socket;	//서버와 통신할 소켓
+		String userID;
 		Client(Socket socket) {
-			this.socket = socket;
-			receive();
+			this.socket = socket; //서버와 통신할 소켓 저장
+			send("테스트2");
+			receive();			//메시지 받는다.
+			
 		}
 		
 		void receive() {
@@ -131,19 +142,28 @@ public class ServerController implements Initializable{
 							if(readByteCount == -1) {  throw new IOException(); }
 							
 							String message = "[요청 처리: " + socket.getRemoteSocketAddress() + ": " + Thread.currentThread().getName() + "]";
-							Platform.runLater(()->displayText(message));
+							Platform.runLater(()->serverLogText(message));
 							
 							String data = new String(byteArr, 0, readByteCount, "UTF-8");
+							userID=data;
 							
+							//접속 목록을 위해서 저장
+							hm.put(data, socket.getOutputStream());
+							
+							Platform.runLater(()->serverLogText(data+"님이 접속하셨습니다."));
+							Platform.runLater(()->connectedListText(hm));
 							for(Client client : connections) {
-								client.send(data); 
+								client.send(data+"님이 접속하셨습니다."); 
 							}
 						}
 					} catch(Exception e) {
 						try {
+							hm.remove(Client.this.userID);
 							connections.remove(Client.this);
 							String message = "[클라이언트 통신 안됨: " + socket.getRemoteSocketAddress() + ": " + Thread.currentThread().getName() + "]";
-							Platform.runLater(()->displayText(message));
+							Platform.runLater(()->serverLogText(message));
+							Platform.runLater(()->connectedListText(hm));
+							
 							socket.close();
 						} catch (IOException e2) {}
 					}
@@ -164,7 +184,7 @@ public class ServerController implements Initializable{
 					} catch(Exception e) {
 						try {
 							String message = "[클라이언트 통신 안됨: " + socket.getRemoteSocketAddress() + ": " + Thread.currentThread().getName() + "]";
-							Platform.runLater(()->displayText(message));
+							Platform.runLater(()->serverLogText(message));
 							connections.remove(Client.this);
 							socket.close();
 						} catch (IOException e2) {}
@@ -175,7 +195,19 @@ public class ServerController implements Initializable{
 		}
 
 	}
-	void displayText(String text) {
+	
+	// 서버 로그창 기록 메소드
+	void serverLogText(String text) {
 		serverLog.appendText(text + "\n");
 	}	
+	
+	// 서버 접속자 기록 메소드
+	void connectedListText(HashMap<String,OutputStream> cl) {
+		connectionList.clear();
+		Iterator<String> keys = hm.keySet().iterator();
+		while( keys.hasNext() ) {
+			String userID = keys.next();
+			connectionList.appendText(userID + "\n");
+		}
+	}
 }

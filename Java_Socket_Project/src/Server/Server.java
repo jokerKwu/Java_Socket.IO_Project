@@ -26,6 +26,7 @@ import javafx.stage.Stage;
 
 public class Server extends Application {
 	
+	//UI 持失 五社球
 	@Override
 	public void start(Stage primaryStage) throws Exception{
 		Parent root= (Parent)FXMLLoader.load(getClass().getResource("serverUI.fxml"));
@@ -36,7 +37,7 @@ public class Server extends Application {
 		primaryStage.setTitle("Server");
 		primaryStage.show();
 	}
-
+	
 	public static void main(String[] args) {
 		launch(args);
 	}
