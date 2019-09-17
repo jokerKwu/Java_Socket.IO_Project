@@ -76,14 +76,19 @@ public class ServerController implements Initializable {
 				});
 				while (true) {
 					try {
-						// 클라이언트 연결을 기다리고있다.
+						// 클라이언트 연결을 기다리고있다. 접속 성공
 						Socket socket = serverSocket.accept();
 						String message = "[연결 수락: " + socket.getRemoteSocketAddress() + ": "
 								+ Thread.currentThread().getName() + "]";
 						Platform.runLater(() -> serverLogText(message));
-
 						Client client = new Client(socket);
 						connections.add(client);
+						
+						for(Client c:connections) {
+							String connList=getConnectedList();
+							c.send(connList);
+						}
+						
 						Platform.runLater(() -> serverLogText("[연결 개수: " + connections.size() + "]"));
 					} catch (Exception e) {
 						if (!serverSocket.isClosed()) {
@@ -133,6 +138,7 @@ public class ServerController implements Initializable {
 			this.socket = socket; // 서버와 통신할 소켓 저장
 			receive(); // 메시지 받는다.
 			db.clear();
+
 		}
 
 		void receive() {
@@ -162,13 +168,14 @@ public class ServerController implements Initializable {
 							if (strArr[0].equals("id")) {
 								setUserID(strArr[1]);
 							}
-
+							
 							// 클라이언트한테 전달받은 메시지 처리
 							receiveMessageProcess(data);
 
 						}
 					} catch (Exception e) {
 						try {
+							//클라이언트가 종료됐을때
 							hm.remove(Client.this.userID);
 							connections.remove(Client.this);
 							Platform.runLater(() -> connectedListText());
@@ -176,6 +183,11 @@ public class ServerController implements Initializable {
 									+ Thread.currentThread().getName() + "]";
 							Platform.runLater(() -> serverLogText(message));
 
+							String connList=getConnectedList();
+							for(Client client:connections) {
+								client.send(connList);
+							}
+							
 							socket.close();
 						} catch (IOException e2) {
 						}
@@ -217,10 +229,15 @@ public class ServerController implements Initializable {
 				hm.put(strArr[1], socket.getOutputStream());
 				Platform.runLater(() -> serverLogText(strArr[1] + "님이 접속하셨습니다."));
 				Platform.runLater(() -> connectedListText());
-				for (Client client : connections) {
-					client.send(strArr[1] + "님이 접속하셨습니다.");
+				String connList=getConnectedList();
+				for(Client client:connections) {
+					client.send(connList);
 				}
-
+				/*
+				for(Client client:connections) {
+					client.send(connList);
+				}
+				*/
 				break;
 			// 클라이언트가 메시지 전달
 			case "send":
@@ -243,7 +260,12 @@ public class ServerController implements Initializable {
 					String res = db.poll();
 					send(res);
 				}
-
+				break;
+				// 접속자 리스트 업데이트
+			case "connList":
+				for (Client client : connections) {
+					client.send(data);
+				}
 				break;
 			}
 		}
@@ -271,7 +293,8 @@ public class ServerController implements Initializable {
 			connectionList.appendText(userID + "\n");
 		}
 	}
-
+	
+	//서버 접속자 가져오기
 	String getConnectedList() {
 		String res = "connList//";
 		Iterator<String> keys = hm.keySet().iterator();
