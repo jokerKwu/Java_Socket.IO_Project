@@ -19,21 +19,13 @@
         </ToolBar>
     </top>
     <center>
-
-        <TextArea fx:id="clientLog" disable="true"/>
-
+		<TextArea fx:id="clientLog" disable="true"/>
+	</center>
     <bottom>
         <BorderPane>
         	<left>
-    		<ComboBox fx:id="uidComboBox" layoutX="74.0" layoutY="106.0"  prefWidth="60.0" promptText="User" >
-          <!-- <items>
-            <FXCollections fx:factory="observableArrayList"  >
-                <String fx:value="Item 1" />
-                <String fx:value="Item 2" />
-                <String fx:value="Item 3" />
-                <String fx:value="Item 4" />
-            </FXCollections>        
-          </items> -->
+    		<ComboBox fx:id="uidComboBox" layoutX="74.0" layoutY="106.0"  prefWidth="60.0"  >
+
          	</ComboBox>
 
         	</left>
