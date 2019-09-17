@@ -6,18 +6,18 @@
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ComboBox?>
-
+<?import javafx.scene.layout.HBox?>
 
 <BorderPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Server.ServerController" prefHeight="400" prefWidth="700">
     <top>
     	<Button fx:id="serverBtn" text="start"  />
     </top>
     <center>
-        <TextArea fx:id="serverLog" disable="true"/>
+		<HBox spacing="20.0" fillHeight="600">    	
+	        <TextArea fx:id="serverLog" disable="true"  prefWidth="500" prefHeight="350"/>
+	 		<TextArea fx:id="connectionList" disable="true" prefWidth="200" prefHeight="350"/>
+	 	</HBox>
     </center>
-    <bottom>
-
-    </bottom>
 
 </BorderPane>
 

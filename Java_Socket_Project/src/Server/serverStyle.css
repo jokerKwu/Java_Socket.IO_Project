@@ -23,5 +23,7 @@
 	-fx-font-size: 20;
 	-fx-text-fill: black;
 }
-
+#connectionList{
+	-fx-background-color: darkgray;
+}
 

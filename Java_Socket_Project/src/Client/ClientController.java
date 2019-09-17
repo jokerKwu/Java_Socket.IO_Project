@@ -26,6 +26,7 @@ public class ClientController implements Initializable{
 	@FXML private TextArea clientLog;
 	@FXML private TextField clientInput;
 	@FXML private Button sendBtn;
+	@FXML private TextField userIdInput;
 	
 	Socket socket;
 	
