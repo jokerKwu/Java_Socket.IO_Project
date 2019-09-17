@@ -25,11 +25,8 @@
     <bottom>
         <BorderPane>
         	<left>
-    		<ComboBox fx:id="uidComboBox" layoutX="74.0" layoutY="106.0"  prefWidth="60.0"  >
-
-         	</ComboBox>
-
-        	</left>
+    		<ComboBox fx:id="uidComboBox" onAction="#handleComboChange" layoutX="74.0" layoutY="106.0"  prefWidth="150.0" promptText="모두에게" />
+			</left>
             <center>
                 <TextField fx:id="clientInput" />
             </center>        

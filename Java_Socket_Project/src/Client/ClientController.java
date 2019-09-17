@@ -9,11 +9,11 @@ import java.net.URL;
 import java.util.ResourceBundle;
 
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Alert.AlertType;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
@@ -35,22 +35,36 @@ public class ClientController implements Initializable {
 	private Button sendBtn;
 	@FXML
 	private TextField userIdInput;
-
+	
+	private ObservableList<String> comboBoxList = FXCollections.observableArrayList("모두에게");
 	Socket socket;
-
+	private String opponentUserID;
+	
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
-
+		
+		uidComboBox.setItems(comboBoxList);
+		
 		connBtn.setOnAction(event -> handleClientBtnAction(event));
 
 		sendBtn.setOnAction(event -> handleClientMessageSendAction(event));
+		
+		receiveBtn.setOnAction(event->handleClientMessageReceiveAction(event));
+		
 	}
 
+	public void handleClientMessageReceiveAction(ActionEvent event) {
+		String data="";
+		data=stringProcess("receive",data);
+		send(data);
+	}
+	
 	public void handleClientMessageSendAction(ActionEvent event) {
 		String text = "";
 		if (clientInput.getText() != null) {
 			text = clientInput.getText();
-			send(text);
+			String data=stringProcess("send",text);
+			send(data);
 		}
 	}
 
@@ -62,6 +76,9 @@ public class ClientController implements Initializable {
 		}
 	}
 
+	public void handleComboChange(ActionEvent event) {
+		opponentUserID=uidComboBox.getValue().toString();
+	}
 	// 클라이언트 프로그램의 작동을 시작하는 메소드
 	void startClient() {
 		
@@ -178,6 +195,7 @@ public class ClientController implements Initializable {
 				break;
 			case "send":
 				res = "send//";
+				res+=opponentUserID+"//";
 				break;
 			case "receive":
 				res = "receive//";

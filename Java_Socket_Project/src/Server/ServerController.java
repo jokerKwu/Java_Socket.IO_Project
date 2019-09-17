@@ -9,7 +9,9 @@ import java.net.Socket;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.ResourceBundle;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
@@ -125,11 +127,12 @@ public class ServerController implements Initializable {
 	class Client {
 		Socket socket; // 서버와 통신할 소켓
 		String userID;
+		Queue<String> db = new LinkedList<String>();
 
 		Client(Socket socket) {
 			this.socket = socket; // 서버와 통신할 소켓 저장
 			receive(); // 메시지 받는다.
-
+			db.clear();
 		}
 
 		void receive() {
@@ -154,31 +157,27 @@ public class ServerController implements Initializable {
 							Platform.runLater(() -> serverLogText(message));
 
 							String data = new String(byteArr, 0, readByteCount, "UTF-8");
-							
+
 							String[] strArr = data.split("//");
-							
-							if(strArr[0]=="id") {Client.this.userID=strArr[1];
-							System.out.println("서버테스트1 "+strArr[1]);
-							System.out.println("서버테스트2 "+Client.this.userID);
+							if (strArr[0].equals("id")) {
+								setUserID(strArr[1]);
 							}
-							System.out.println("테스트다 임마 "+Client.this.userID);
 							// 클라이언트한테 전달받은 메시지 처리
 							receiveMessageProcess(data);
-
-							// hm.put(data, socket.getOutputStream());
 
 						}
 					} catch (Exception e) {
 						try {
-							if(Client.this.userID.equals("조현준")) System.out.println("모여 시바");
+							if (Client.this.userID.equals("조현준"))
+								System.out.println("모여 시바");
 							hm.remove(Client.this.userID);
 							connections.remove(Client.this);
-							Platform.runLater(() -> connectedListText(hm));
+							
+							Platform.runLater(() -> connectedListText());
 							String message = "[2.클라이언트 통신 안됨: " + socket.getRemoteSocketAddress() + ": "
 									+ Thread.currentThread().getName() + "]";
 							Platform.runLater(() -> serverLogText(message));
-
-
+							
 							socket.close();
 						} catch (IOException e2) {
 						}
@@ -212,21 +211,53 @@ public class ServerController implements Initializable {
 			executorService.submit(runnable);
 		}
 
+		void setUserID(String userID) {
+			this.userID = userID;
+		}
+
+		String getUserID() {
+			return this.userID;
+		}
+
 		void receiveMessageProcess(String data) throws IOException {
 			String[] strArr = data.split("//");
 			switch (strArr[0]) {
+			// 접속자리스트 생성
 			case "id":
 				hm.put(strArr[1], socket.getOutputStream());
 				Platform.runLater(() -> serverLogText(strArr[1] + "님이 접속하셨습니다."));
-				Platform.runLater(() -> connectedListText(hm));
+				Platform.runLater(() -> connectedListText());
 				for (Client client : connections) {
 					client.send(strArr[1] + "님이 접속하셨습니다.");
 				}
-				
+
 				break;
+			// 클라이언트가 메시지 전달
 			case "send":
+
+				if (strArr[1].equals("모두에게")) {
+					for (Client client : connections)
+						client.db.add(strArr[2]);
+				} else {
+					for (Client client : connections) {
+						if (strArr[1].equals(client.getUserID()))
+							client.db.add(strArr[2]);
+					}
+				}
+
 				break;
+
+			// 클라이언트 메시지 받는다.
 			case "receive":
+
+				// 자신이 받은 메시지를 전송한다.
+				if (db.isEmpty())
+					send("전달받은 메시지가 없습니다.");
+				else {
+					String res = db.poll();
+					send(res);
+				}
+
 				break;
 			}
 		}
@@ -239,12 +270,21 @@ public class ServerController implements Initializable {
 	}
 
 	// 서버 접속자 기록 메소드
-	void connectedListText(HashMap<String, OutputStream> cl) {
+	void connectedListText() {
 		connectionList.clear();
 		Iterator<String> keys = hm.keySet().iterator();
 		while (keys.hasNext()) {
 			String userID = keys.next();
 			connectionList.appendText(userID + "\n");
 		}
+	}
+	String getConnectedList() {
+		String res="connList//";
+		Iterator<String> keys= hm.keySet().iterator();
+		while(keys.hasNext()) {
+			String userID=keys.next();
+			res+=userID+"//";
+		}
+		return res;
 	}
 }
