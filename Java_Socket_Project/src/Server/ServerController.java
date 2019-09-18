@@ -8,11 +8,13 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.ResourceBundle;
+import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,11 +34,12 @@ public class ServerController implements Initializable {
 	@FXML
 	private TextArea connectionList;
 
+	
 	ExecutorService executorService;
 	ServerSocket serverSocket;
 	List<Client> connections = new Vector<Client>();
 	HashMap<String, OutputStream> hm = new HashMap<String, OutputStream>();
-
+	Set<String> ids = new HashSet<String>();
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 
@@ -54,11 +57,12 @@ public class ServerController implements Initializable {
 
 	// 서버를 구동시켜 클라이언트의 연결을 기다리는 메소드
 	void startServer() {
-		executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+		executorService = Executors.newFixedThreadPool(10);
 
 		try {
 			serverSocket = new ServerSocket();
 			serverSocket.bind(new InetSocketAddress("localhost", 5001));
+			
 		} catch (Exception e) {
 			if (!serverSocket.isClosed()) {
 				stopServer();
@@ -83,9 +87,10 @@ public class ServerController implements Initializable {
 						Platform.runLater(() -> serverLogText(message));
 						Client client = new Client(socket);
 						connections.add(client);
+
 						
+						String connList=getConnectedList();
 						for(Client c:connections) {
-							String connList=getConnectedList();
 							c.send(connList);
 						}
 						
@@ -167,6 +172,7 @@ public class ServerController implements Initializable {
 							String[] strArr = data.split("//");
 							if (strArr[0].equals("id")) {
 								setUserID(strArr[1]);
+								ids.add(strArr[1]);
 							}
 							
 							// 클라이언트한테 전달받은 메시지 처리
@@ -178,13 +184,23 @@ public class ServerController implements Initializable {
 
 							//클라이언트가 종료됐을때
 
-							hm.remove(Client.this.userID);
+							hm.remove(Client.this.getUserID());
+							ids.remove(Client.this.getUserID());
+							
+
 							connections.remove(Client.this);
 
 							Platform.runLater(() -> connectedListText());
 							String message = "[2.클라이언트 통신 안됨: " + socket.getRemoteSocketAddress() + ": "
 									+ Thread.currentThread().getName() + "]";
 							Platform.runLater(() -> serverLogText(message));
+
+							
+							String connList=getConnectedList();
+							for(Client client:connections) {
+								client.send(connList);
+							}
+							
 
 							socket.close();
 						} catch (IOException e2) {
@@ -235,15 +251,12 @@ public class ServerController implements Initializable {
 				hm.put(strArr[1], socket.getOutputStream());
 				Platform.runLater(() -> serverLogText(strArr[1] + "님이 접속하셨습니다."));
 				Platform.runLater(() -> connectedListText());
+				
 				String connList=getConnectedList();
 				for(Client client:connections) {
 					client.send(connList);
 				}
-				/*
-				for(Client client:connections) {
-					client.send(connList);
-				}
-				*/
+
 				break;
 			// 클라이언트가 메시지 전달
 			case "send":
@@ -287,7 +300,7 @@ public class ServerController implements Initializable {
 	// 서버 접속자 기록 메소드
 	void connectedListText() {
 		connectionList.clear();
-		Iterator<String> keys = hm.keySet().iterator();
+		Iterator<String> keys = ids.iterator();
 		while (keys.hasNext()) {
 			String userID = keys.next();
 			connectionList.appendText(userID + "\n");
@@ -297,7 +310,7 @@ public class ServerController implements Initializable {
 	//서버 접속자 가져오기
 	String getConnectedList() {
 		String res = "connList//";
-		Iterator<String> keys = hm.keySet().iterator();
+		Iterator<String> keys = ids.iterator();
 		while (keys.hasNext()) {
 			String userID = keys.next();
 			res += userID + "//";

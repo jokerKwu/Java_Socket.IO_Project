@@ -13,7 +13,13 @@
 	fx:controller="Server.ServerController" prefHeight="400"
 	prefWidth="700">
 	<top>
-		<Button fx:id="serverBtn" text="start" />
+		<ToolBar>
+			<items>
+				<TextField prefWidth="250" text="127.0.0.1" disable="true" />
+				<TextField prefWidth="150" text="5001" disable="true" />	
+				<Button fx:id="serverBtn" text="start" />
+			</items>
+		</ToolBar>
 	</top>
 	<center>
 		<HBox spacing="20.0" fillHeight="600">

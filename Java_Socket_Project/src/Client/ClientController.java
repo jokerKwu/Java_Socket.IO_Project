@@ -6,7 +6,10 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URL;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -38,8 +41,11 @@ public class ClientController implements Initializable {
 
 	private ObservableList<String> comboBoxList = FXCollections.observableArrayList("모두에게");
 	private String opponentUserID;
+
 	Socket socket;
-	
+
+	private Set<String> userIDs;
+
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 
@@ -106,7 +112,7 @@ public class ClientController implements Initializable {
 						send(userId);
 						userIdInput.setDisable(true);
 					}
-					
+
 					// 서버 연결 실패
 					else {
 						Platform.runLater(() -> displayText("[연결 실패] 아이디 입력해주세요."));
@@ -195,7 +201,7 @@ public class ClientController implements Initializable {
 
 		clientLog.appendText(text + "\n");
 	}
-	
+
 	// 보낼 메시지 전처리 과정
 	String stringProcess(String cmd, String msg) {
 		String res = new String();
@@ -213,13 +219,29 @@ public class ClientController implements Initializable {
 		}
 		return res + msg;
 	}
+
 	// 콤보박스 업데이트하는 메소드
 	void comboBoxUpdate(String data) {
-		System.out.println(data);
-		uidComboBox.setItems(comboBoxList);
-		String[] item=data.split("//");
-		for(int i=1;i<item.length;i++) {
-			uidComboBox.getItems().add(item[i]);
+
+		userIDs = new HashSet<String>();
+		uidComboBox.setItems(comboBoxList); // 모두에게
+		String[] item = data.split("//");
+		for (int i = 1; i < item.length; i++) {
+			userIDs.add(item[i]);
 		}
+		Iterator<String> iter = userIDs.iterator();
+
+		comboBoxRemove();
+		uidComboBox.getItems().add(opponentUserID);
+		while (iter.hasNext()) {
+			String tmp = iter.next();
+			uidComboBox.getItems().add(tmp);
+		}
+
+	}
+
+	// 콤보박스 전부 지우는 메소드
+	void comboBoxRemove() {
+		uidComboBox.getItems().clear();
 	}
 }
