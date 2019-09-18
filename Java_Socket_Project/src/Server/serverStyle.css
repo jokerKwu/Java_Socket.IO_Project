@@ -1,7 +1,9 @@
 /*text-area 배경색*/
 .text-area {
-	-fx-background-color: blanchedalmond;
-	-fx-font-fill:red;
+	-fx-font-size: 15.0;
+	-fx-text-fill: black;
+	-fx-font-family:Roboto;
+	-fx-background-color: peachpuff;
 }
 
 /*scroll-pane 배경색*/
@@ -19,10 +21,6 @@
 	-fx-background-color: transparent;
 }
 
-#serverLog {
-	-fx-font-size: 20.0;
-	-fx-text-fill: black;
-}
 #connectionList{
 	-fx-background-color: darkgray;
 }
