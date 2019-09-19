@@ -261,12 +261,16 @@ public class ServerController implements Initializable {
 			// 클라이언트가 메시지 전달
 			case "send":
 				if (strArr[1].equals("모두에게")) {
-					for (Client client : connections)
+					for (Client client : connections) {
 						client.db.add(strArr[2]);
+						client.send("[ 메시지가 도착하였습니다. ]");
+					}
 				} else {
 					for (Client client : connections) {
-						if (strArr[1].equals(client.getUserID()))
+						if (strArr[1].equals(client.getUserID())) {
 							client.db.add(strArr[2]);
+							client.send("[ 메시지가 도착하였습니다. ]");
+						}
 					}
 				}
 				break;
