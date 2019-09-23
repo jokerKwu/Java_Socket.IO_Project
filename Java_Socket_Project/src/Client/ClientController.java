@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.ResourceBundle;
 import java.util.Set;
 
+import DB.DAOFactory;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -45,7 +46,7 @@ public class ClientController implements Initializable {
 	Socket socket;
 
 	private Set<String> userIDs;
-
+	private DAOFactory daoFactory=null;
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 
@@ -102,6 +103,11 @@ public class ClientController implements Initializable {
 					// 서버 연결 시도 서버 연결 성공
 					if (userIdInput.getText().length() != 0 && !userIdInput.getText().equals("아이디 입력")) {
 						socket.connect(new InetSocketAddress("localhost", 5001));
+						
+						// 디비 연결
+						DAOFactory o=daoFactory.getFactory(1);
+						o.insertID(userId);
+						
 						Platform.runLater(() -> {
 							displayText("[연결 완료: " + socket.getRemoteSocketAddress() + "]");
 							connBtn.setText("disconnect");

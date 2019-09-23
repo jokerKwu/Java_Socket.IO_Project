@@ -1,10 +1,14 @@
 package DB;
 
-public class DAOFactory {
+import MySQLDAO.MySQLDAOFactory;
+import OracleDAO.OracleDAOFactory;
+
+public abstract class DAOFactory {
 	public static final int MYSQL =0;
 	public static final int ORACLE =1;
+
 	
-	public static DAOFactory getFactory(int type) {
+	public DAOFactory getFactory(int type) {
 		switch(type) {
 		case MYSQL:
 			return new MySQLDAOFactory();
@@ -14,4 +18,7 @@ public class DAOFactory {
 			return null;
 		}
 	}
+	public abstract void insertID(String id);
+	
+
 }
