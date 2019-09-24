@@ -20,13 +20,13 @@ public class OracleDAO {
 	}
 
 	// 유저아이디 값 가져오는 메소드
-	public int DAO_select_UserId(Connection conn, String id) throws SQLException {
+	public int DAO_select_UserId(Connection conn, String username) throws SQLException {
 		int user_id = -1;
 		try {
 			//아이디 있는지 체크하고
 			String query = "select * from user_tbl where username=?";
 			pstmt=conn.prepareStatement(query);
-			pstmt.setString(1, id);
+			pstmt.setString(1, username);
 			rs=pstmt.executeQuery();
 			while (rs.next()) {
 				user_id = rs.getInt("user_id");
@@ -39,12 +39,12 @@ public class OracleDAO {
 
 				pstmt = conn.prepareStatement(query1);
 
-				pstmt.setString(1, id);
+				pstmt.setString(1, username);
 				pstmt.executeUpdate();
 				
 				String query2="select * from user_tbl where username=?";
 				pstmt=conn.prepareStatement(query2);
-				pstmt.setString(1, id);
+				pstmt.setString(1, username);
 				rs=pstmt.executeQuery();
 				while(rs.next()) {
 					user_id=rs.getInt(1);

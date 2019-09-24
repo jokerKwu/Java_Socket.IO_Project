@@ -77,7 +77,14 @@ public class ClientController implements Initializable {
 
 		receiveBtn.setOnAction(event -> handleClientMessageReceiveAction(event));
 		
-		saveBtn.setOnAction(event-> handleClientMessageSaveAction(event));
+		saveBtn.setOnAction(event-> {
+			try {
+				handleClientMessageSaveAction(event);
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		});
 		
 		lastBtn.setOnAction(event->{
 			try {
@@ -107,9 +114,10 @@ public class ClientController implements Initializable {
 	}
 	
 	
-	public void handleClientMessageSaveAction(ActionEvent event) {
+	public void handleClientMessageSaveAction(ActionEvent event) throws SQLException {
 		System.out.println("메시지 저장 테스트");
 		saveBtn.setDisable(true);
+		odao.DAO_insert_saveConversation(odb.getConnection(),session_id);
 		Platform.runLater(() -> displayText("[마지막 문장 가져오기 성공] "));
 		
 	}
@@ -119,8 +127,6 @@ public class ClientController implements Initializable {
 		data=stringProcess("receive",data);
 		saveBtn.setDisable(false);
 		send(data);
-		
-		
 		
 	}
 	

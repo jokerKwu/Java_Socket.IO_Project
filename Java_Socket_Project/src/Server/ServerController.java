@@ -272,7 +272,6 @@ public class ServerController implements Initializable {
 			// 클라이언트가 서버로 메시지를 전달
 			case "send":
 				if (strArr[2].equals("모두에게")) {
-					System.out.println("들어오냐1?");
 					for (Client client : connections) {
 						String oUsername=client.getUserName();
 						int oSID=odao.DAO_select_UserId(odb.getConnection(), oUsername);

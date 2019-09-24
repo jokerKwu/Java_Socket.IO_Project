@@ -1,27 +1,14 @@
-/*text-area 배경색*/
-.text-area {
-	-fx-font-size: 15.0;
-	-fx-text-fill: black;
-	-fx-font-family:Roboto;
-	-fx-background-color: peachpuff;
-}
 
-/*scroll-pane 배경색*/
-.text-area .scroll-pane {
-	-fx-background-color: transparent;
-}
-
-/*viewport 배경색*/
-.text-area .scroll-pane .viewport{
-	-fx-background-color: transparent;
-}
-
-/*content 배경색*/
-.text-area .scroll-pane .content{
-	-fx-background-color: transparent;
-}
 
 #connectionList{
+	
 	-fx-background-color: darkgray;
 }
 
+#serverLog{
+	-fx-font-size: 15.0;
+	-fx-text-fill: black;
+	
+	-fx-background-color: red;
+	
+}
