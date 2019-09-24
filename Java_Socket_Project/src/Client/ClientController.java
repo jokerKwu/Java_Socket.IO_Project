@@ -6,12 +6,15 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URL;
+import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.ResourceBundle;
 import java.util.Set;
 
 import DB.DAOFactory;
+import OracleDAO.OracleDAO;
+import OracleDAO.OracleDBConnection;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -39,14 +42,28 @@ public class ClientController implements Initializable {
 	private Button sendBtn;
 	@FXML
 	private TextField userIdInput;
-
+	@FXML
+	private Button saveBtn;				
+	@FXML
+	private Button lastBtn;				// 마지막 대화 가져오기
+	
+	
 	private ObservableList<String> comboBoxList = FXCollections.observableArrayList("모두에게");
+	
 	private String opponentUserID;
-
+	
 	Socket socket;
-
+	
 	private Set<String> userIDs;
 	private DAOFactory daoFactory=null;
+	private int session_id;
+	private String save_last_sentence=null;
+	
+	
+	private OracleDBConnection odb;
+	private OracleDAO odao;
+	
+	
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 
@@ -59,20 +76,62 @@ public class ClientController implements Initializable {
 		sendBtn.setOnAction(event -> handleClientMessageSendAction(event));
 
 		receiveBtn.setOnAction(event -> handleClientMessageReceiveAction(event));
+		
+		saveBtn.setOnAction(event-> handleClientMessageSaveAction(event));
+		
+		lastBtn.setOnAction(event->{
+			try {
+				handleClientMessageLastAction(event);
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		});
+		
+		
+		odb=OracleDBConnection.getInstance();
+		odao=OracleDAO.getInstance();
+		
 	}
-
+	public void handleClientMessageLastAction(ActionEvent event) throws SQLException {
+		System.out.println("마지막 문장 가져오기");
+		String lastSentence=null;
+		lastSentence=odao.DAO_select_lastReply(odb.getConnection(), session_id);	//해당 유저에 마지막 대화 가져오기
+		if(lastSentence==null) {
+			Platform.runLater(() -> displayText("[마지막 문장 가져오기 실패] 대화 목록이 없습니다."));
+		}
+		else {
+			Platform.runLater(() -> displayText("[마지막 문장 가져오기 성공] "));
+			clientInput.setText(lastSentence);
+		}
+	}
+	
+	
+	public void handleClientMessageSaveAction(ActionEvent event) {
+		System.out.println("메시지 저장 테스트");
+		saveBtn.setDisable(true);
+		Platform.runLater(() -> displayText("[마지막 문장 가져오기 성공] "));
+		
+	}
+	
 	public void handleClientMessageReceiveAction(ActionEvent event) {
 		String data="";
 		data=stringProcess("receive",data);
+		saveBtn.setDisable(false);
 		send(data);
+		
+		
+		
 	}
 	
+	//채팅 메시지 
 	public void handleClientMessageSendAction(ActionEvent event) {
 		String text = "";
 		if (clientInput.getText() != null) {
 			text = clientInput.getText();
 			String data = stringProcess("send", text);
 			send(data);
+			clientInput.setText("");
 		}
 	}
 
@@ -104,15 +163,16 @@ public class ClientController implements Initializable {
 					if (userIdInput.getText().length() != 0 && !userIdInput.getText().equals("아이디 입력")) {
 						socket.connect(new InetSocketAddress("localhost", 5001));
 						
-						// 디비 연결
-						DAOFactory o=daoFactory.getFactory(1);
-						o.insertID(userId);
+						//세션값 저장
+						setSessionID(odao.DAO_select_UserId(odb.getConnection(),userIdInput.getText()));
+						
+						
+						System.out.println("현재 클라이언트에 세션 값 : "+session_id);
 						
 						Platform.runLater(() -> {
 							displayText("[연결 완료: " + socket.getRemoteSocketAddress() + "]");
 							connBtn.setText("disconnect");
 							sendBtn.setDisable(false);
-							receiveBtn.setDisable(false);
 							clientInput.setDisable(false);
 						});
 						send(userId);
@@ -166,13 +226,28 @@ public class ClientController implements Initializable {
 				if (readByteCount == -1) {
 					throw new IOException();
 				}
-
+				
 				String data = new String(byteArr, 0, readByteCount, "UTF-8");
 				String[] strArr = data.split("//");
+				
+				for(int i=0;i<strArr.length;i++) {
+					System.out.println(strArr[i]);
+				}
+				
 				if (strArr[0].equals("connList")) {
 					comboBoxUpdate(data);
-				} else
-					Platform.runLater(() -> displayText("[받기 완료] " + data));
+				} 
+				else if(strArr[0].equals("event")) {//메시지가 도착했는데
+					eventBtnUpdate(strArr);
+					if(strArr[3]!=null) {
+						Platform.runLater(() -> displayText("[받기 완료] " +strArr[3]));
+						save_last_sentence=strArr[3];
+					}
+				}
+				else {//서버에 큐에서 저장된 메시지를 꺼내올 때 
+					Platform.runLater(() -> displayText("[받기 완료] " +strArr[3]));
+					save_last_sentence=strArr[3];
+				}
 			} catch (Exception e) {
 				Platform.runLater(() -> displayText("[서버 통신 안됨]"));
 				stopClient();
@@ -181,7 +256,7 @@ public class ClientController implements Initializable {
 		}
 
 	}
-
+	
 	// 서버로 메시지를 전송하는 메소드
 	void send(String data) {
 		Thread thread = new Thread() {
@@ -212,20 +287,38 @@ public class ClientController implements Initializable {
 	String stringProcess(String cmd, String msg) {
 		String res = new String();
 		switch (cmd) {
-		case "id":
+		case "id":				//클라이언트가 접속했을 때 서버에게 전달
 			res = "id//";
 			break;
-		case "send":
+			
+		case "send":			//클라이언트가 서버에게 메시지를 보낸다
 			res = "send//";
+			res+=Integer.toString(session_id)+"//";
 			res += opponentUserID + "//";
 			break;
-		case "receive":
+		case "receive":			//클라이언트가 서버한테 메시지 달라고 요청
 			res = "receive//";
 			break;
 		}
 		return res + msg;
 	}
-
+	//버튼 활성화  & 비활성화 나타내기
+	void eventBtnUpdate(String[] data) {
+		if(data[1].equals("saveBtn")) {
+			if(data[2].equals("false")) {
+				saveBtn.setDisable(false);
+			}else {
+				saveBtn.setDisable(true);
+			}
+		}else if(data[1].equals("receiveBtn")) {
+			if(data[2].equals("false")) {
+				receiveBtn.setDisable(false);
+			}else {
+				receiveBtn.setDisable(true);
+			}
+		}
+	}
+	
 	// 콤보박스 업데이트하는 메소드
 	void comboBoxUpdate(String data) {
 
@@ -249,5 +342,11 @@ public class ClientController implements Initializable {
 	// 콤보박스 전부 지우는 메소드
 	void comboBoxRemove() {
 		uidComboBox.getItems().clear();
+	}
+	int getSessionID() {
+		return session_id;
+	}
+	void setSessionID(int session_id) {
+		this.session_id=session_id;
 	}
 }

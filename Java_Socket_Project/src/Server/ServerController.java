@@ -7,6 +7,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -19,6 +20,8 @@ import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import OracleDAO.OracleDAO;
+import OracleDAO.OracleDBConnection;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -40,10 +43,17 @@ public class ServerController implements Initializable {
 	List<Client> connections = new Vector<Client>();
 	HashMap<String, OutputStream> hm = new HashMap<String, OutputStream>();
 	Set<String> ids = new HashSet<String>();
+	
+	private OracleDBConnection odb;
+	private OracleDAO odao;
+	
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 
 		serverBtn.setOnAction(event -> handleServerBtnAction(event));
+		
+		odb=OracleDBConnection.getInstance();
+		odao=OracleDAO.getInstance();
 
 	}
 
@@ -136,9 +146,10 @@ public class ServerController implements Initializable {
 
 	class Client {
 		Socket socket; // 서버와 통신할 소켓
-		String userID;
+		String userName;
 		Queue<String> db = new LinkedList<String>();
-
+		
+		
 		Client(Socket socket) {
 			this.socket = socket; // 서버와 통신할 소켓 저장
 			receive(); // 메시지 받는다.
@@ -171,7 +182,7 @@ public class ServerController implements Initializable {
 
 							String[] strArr = data.split("//");
 							if (strArr[0].equals("id")) {
-								setUserID(strArr[1]);
+								setUserName(strArr[1]);
 								ids.add(strArr[1]);
 							}
 							
@@ -184,8 +195,8 @@ public class ServerController implements Initializable {
 
 							//클라이언트가 종료됐을때
 
-							hm.remove(Client.this.getUserID());
-							ids.remove(Client.this.getUserID());
+							hm.remove(Client.this.getUserName());
+							ids.remove(Client.this.getUserName());
 							
 
 							connections.remove(Client.this);
@@ -235,15 +246,15 @@ public class ServerController implements Initializable {
 			executorService.submit(runnable);
 		}
 
-		void setUserID(String userID) {
-			this.userID = userID;
+		void setUserName(String userName) {
+			this.userName = userName;
 		}
 
-		String getUserID() {
-			return this.userID;
+		String getUserName() {
+			return this.userName;
 		}
 
-		void receiveMessageProcess(String data) throws IOException {
+		void receiveMessageProcess(String data) throws IOException, SQLException {
 			String[] strArr = data.split("//");
 			switch (strArr[0]) {
 			// 접속자리스트 생성
@@ -258,31 +269,44 @@ public class ServerController implements Initializable {
 				}
 
 				break;
-			// 클라이언트가 메시지 전달
+			// 클라이언트가 서버로 메시지를 전달
 			case "send":
-				if (strArr[1].equals("모두에게")) {
+				if (strArr[2].equals("모두에게")) {
+					System.out.println("들어오냐1?");
 					for (Client client : connections) {
-						client.db.add(strArr[2]);
-						client.send("[ 메시지가 도착하였습니다. ]");
+						String oUsername=client.getUserName();
+						int oSID=odao.DAO_select_UserId(odb.getConnection(), oUsername);
+						
+						odao.DAO_insert_Reply(odb.getConnection(), Integer.parseInt(strArr[1]), oSID, strArr[3]);
+						client.db.add(strArr[3]);
+						client.send("event//receiveBtn//false//[ 메시지가 도착하였습니다. ]");
 					}
 				} else {
+					System.out.println("안들어오냐?");
 					for (Client client : connections) {
-						if (strArr[1].equals(client.getUserID())) {
-							client.db.add(strArr[2]);
-							client.send("[ 메시지가 도착하였습니다. ]");
+						if (strArr[2].equals(client.getUserName())) {
+							int oSID=odao.DAO_select_UserId(odb.getConnection(), strArr[2]);
+							odao.DAO_insert_Reply(odb.getConnection(), Integer.parseInt(strArr[1]), oSID, strArr[3]);
+								
+							client.db.add(strArr[3]);
+							client.send("event//receiveBtn//false//[ 메시지가 도착하였습니다. ]");
 						}
 					}
 				}
 				break;
-			// 클라이언트 메시지 받는다.
+			// 클라이언트가 서버에게 메시지 받겠다고 요청
 			case "receive":
 
 				// 자신이 받은 메시지를 전송한다.
-				if (db.isEmpty())
-					send("전달받은 메시지가 없습니다.");
+				if (db.isEmpty()) {
+					send("event//receiveBtn//true//전달받은 메시지가 없습니다.");
+				}
 				else {
 					String res = db.poll();
-					send(res);
+					
+					if(db.isEmpty()) send("event//receiveBtn//true//"+res);
+					else send("event//receiveBtn//false//"+res);
+					
 				}
 				break;
 				// 접속자 리스트 업데이트
@@ -321,4 +345,5 @@ public class ServerController implements Initializable {
 		}
 		return res;
 	}
+
 }

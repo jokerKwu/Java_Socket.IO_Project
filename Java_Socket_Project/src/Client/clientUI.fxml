@@ -18,6 +18,8 @@
 				<TextField fx:id="userIdInput" text="아이디 입력" />
 				<Button fx:id="connBtn" text="connect" />
 				<Button fx:id="receiveBtn" text="receive" disable="true" />
+				<Button fx:id="saveBtn" text="save" disable="true" />
+				<Button fx:id="lastBtn" text="마지막 문장 가져오기" disable="false"/>
 			</items>
 		</ToolBar>
 	</top>
