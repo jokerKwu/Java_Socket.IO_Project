@@ -1,9 +1,7 @@
 package Client;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -130,19 +128,27 @@ public class ClientController implements Initializable {
 	
 	public void handleClientMessageReceiveAction(ActionEvent event) {
 		String data="";
-		data=stringProcess("receive",data);
 		saveBtn.setDisable(false);
-		send(data);
+		JSONObject json=new JSONObject();
+		json.put("type", "receive");
+		json.put("content",session_id);
+		send(json);
 		
 	}
 	
-	//채팅 메시지 
+	//채팅 메시지 보내기 
 	public void handleClientMessageSendAction(ActionEvent event) {
-		String text = "";
-		if (clientInput.getText() != null) {
-			text = clientInput.getText();
-			String data = stringProcess("send", text);
-			send(data);
+	
+		String text="";
+		JSONObject json=new JSONObject();
+		json.put("type", "send");
+		
+		if(clientInput.getText()!=null) {
+			text+=Integer.toString(session_id)+"//";
+			text+=opponentUserID+"//";
+			text+=clientInput.getText();
+			json.put("content", text);
+			send(json);
 			clientInput.setText("");
 		}
 	}
@@ -163,6 +169,7 @@ public class ClientController implements Initializable {
 	void startClient() {
 
 		Thread thread = new Thread() {
+			@SuppressWarnings("unchecked")
 			@Override
 			public void run() {
 				try {
@@ -170,12 +177,12 @@ public class ClientController implements Initializable {
 
 					String userId;
 					
-					userId = stringProcess("id", userIdInput.getText());
+					//userId = stringProcess("id", userIdInput.getText());
 					// 서버 연결 시도 서버 연결 성공
 					if (userIdInput.getText().length() != 0 && !userIdInput.getText().equals("아이디 입력")) {
-						socket.connect(new InetSocketAddress("localhost", 5001));
+						socket.connect(new InetSocketAddress("localhost", 5001));	//서버와 연결을 하고
 						
-						//세션값 저장
+						//세션값을 저장하기 위해서 db에서 셀렉트 
 						setSessionID(odao.DAO_select_UserId(odb.getConnection(),userIdInput.getText()));
 						
 						
@@ -187,7 +194,14 @@ public class ClientController implements Initializable {
 							sendBtn.setDisable(false);
 							clientInput.setDisable(false);
 						});
-						send(userId);
+						
+						JSONObject json=new JSONObject();
+						json.put("type", "join");
+						json.put("content", userIdInput.getText());
+						System.out.println(json.get("type"));
+						System.out.println(json.get("content"));
+						System.out.println(json.toString());
+						send(json);
 						userIdInput.setDisable(true);
 					}
 
@@ -230,34 +244,14 @@ public class ClientController implements Initializable {
 		while (true) {
 			try {
 				
+				System.out.println("클라이언트가 데이터를 받았습니다.!!");
 				
 				InputStream is=socket.getInputStream();
 				ObjectInputStream ois=new ObjectInputStream(is);
 				JSONObject json=(JSONObject) ois.readObject();
-				String data=json.get("type").toString();
-	
+				String typeData=json.get("type").toString();
+				typeProcess(json);
 				
-				
-				String[] strArr=data.split("//");
-				
-				for(int i=0;i<strArr.length;i++) {
-					System.out.println(strArr[i]);
-				}
-				
-				if (strArr[0].equals("connList")) {
-					comboBoxUpdate(data);
-				} 
-				else if(strArr[0].equals("event")) {//메시지가 도착했는데
-					eventBtnUpdate(strArr);
-					if(strArr[3]!=null) {
-						Platform.runLater(() -> displayText("[받기 완료] " +strArr[3]));
-						save_last_sentence=strArr[3];
-					}
-				}
-				else {//서버에 큐에서 저장된 메시지를 꺼내올 때 
-					Platform.runLater(() -> displayText("[받기 완료] " +strArr[3]));
-					save_last_sentence=strArr[3];
-				}
 			} catch (Exception e) {
 				Platform.runLater(() -> displayText("[서버 통신 안됨]"));
 				stopClient();
@@ -269,29 +263,20 @@ public class ClientController implements Initializable {
 	
 	// 서버로 메시지를 전송하는 메소드
 	// JSON 방식으로 보내기
-	void send(String data) {
+
+	void send(JSONObject data) {
 		Thread thread = new Thread() {
 			@SuppressWarnings("unchecked")
 			@Override
 			public void run() {
 				try {
 					
-					
-					
-					
-					JSONObject json=new JSONObject();
-					json.put("type", data);
-					System.out.println(json.toString());
-					
-					
-					//byte[] byteArr = data.getBytes("UTF-8");
 					OutputStream outputStream = socket.getOutputStream();
 					ObjectOutputStream oos=new ObjectOutputStream(outputStream);
-	
-					oos.writeObject(json);
+					oos.writeObject(data);
 					oos.flush();
-					
 					Platform.runLater(() -> displayText("[보내기 완료]"));
+					
 				} catch (Exception e) {
 					Platform.runLater(() -> displayText("[서버 통신 안됨]"));
 					stopClient();
@@ -300,42 +285,48 @@ public class ClientController implements Initializable {
 		};
 		thread.start();
 	}
-
+	void typeProcess(JSONObject json) {
+		String typeData=json.get("type").toString();
+		
+		if(typeData.equals("connList")) {
+			
+			
+			String contentData=json.get("content").toString();
+			comboBoxUpdate(contentData);
+		}
+		else if(typeData.equals("event")) {
+			String[] dataArr=json.get("content").toString().split("//");
+			eventBtnUpdate(dataArr);
+			if(dataArr[2]!=null) {
+				Platform.runLater(()->displayText("[받기 완료]"+dataArr[2]));
+				save_last_sentence=dataArr[2];
+			}
+		}
+		else if(typeData.equals("serverMsg")) {
+			Platform.runLater(()->displayText("[받기 완료]"+json.get("content").toString()));
+		}
+		else {
+			Platform.runLater(()->displayText("[받기 완료]"));
+			
+		}
+	}
+	
 	// 클라이언트 로그창에 메시지 기록하는 메소드
 	void displayText(String text) {
-
 		clientLog.appendText(text + "\n");
 	}
 
-	// 보낼 메시지 전처리 과정
-	String stringProcess(String cmd, String msg) {
-		String res = new String();
-		switch (cmd) {
-		case "id":				//클라이언트가 접속했을 때 서버에게 전달
-			res = "id//";
-			break;
-			
-		case "send":			//클라이언트가 서버에게 메시지를 보낸다
-			res = "send//";
-			res+=Integer.toString(session_id)+"//";
-			res += opponentUserID + "//";
-			break;
-		case "receive":			//클라이언트가 서버한테 메시지 달라고 요청
-			res = "receive//";
-			break;
-		}
-		return res + msg;
-	}
+
 	//버튼 활성화  & 비활성화 나타내기
 	void eventBtnUpdate(String[] data) {
-		if(data[1].equals("saveBtn")) {
-			if(data[2].equals("false")) {
+		if(data[0].equals("saveBtn")) {
+			if(data[1].equals("false")) {
 				saveBtn.setDisable(false);
 			}else {
 				saveBtn.setDisable(true);
 			}
-		}else if(data[1].equals("receiveBtn")) {
-			if(data[2].equals("false")) {
+		}else if(data[0].equals("receiveBtn")) {
+			if(data[1].equals("false")) {
 				receiveBtn.setDisable(false);
 			}else {
 				receiveBtn.setDisable(true);

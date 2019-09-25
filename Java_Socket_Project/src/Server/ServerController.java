@@ -5,12 +5,10 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -88,6 +86,7 @@ public class ServerController implements Initializable {
 
 		// 클라이언트가 접속할 때까지 계속 기다리는 쓰레드
 		Runnable runnable = new Runnable() {
+			@SuppressWarnings("unchecked")
 			@Override
 			public void run() {
 				Platform.runLater(() -> {
@@ -102,13 +101,16 @@ public class ServerController implements Initializable {
 								+ Thread.currentThread().getName() + "]";
 						Platform.runLater(() -> serverLogText(message));
 						Client client = new Client(socket);
+						
 						connections.add(client);
 						
-						
-						
-						String connList=getConnectedList();
+						//연결 리스트 뿌려줘야됨
+						JSONObject sendJson=new JSONObject();
+						sendJson.put("type", "connList");
+						sendJson.put("content", getConnectedList());
+						System.out.println(getConnectedList());
 						for(Client c:connections) {
-							c.send(connList);
+							c.send(sendJson);
 						}
 						
 						Platform.runLater(() -> serverLogText("[연결 개수: " + connections.size() + "]"));
@@ -166,25 +168,20 @@ public class ServerController implements Initializable {
 
 		void receive() {
 			Runnable runnable = new Runnable() {
+				@SuppressWarnings("unchecked")
 				@Override
 				public void run() {
 					try {
 						while (true) {
-							System.out.println("테스트 1");
-					
-							
 							InputStream is=socket.getInputStream();
 							ObjectInputStream ois=new ObjectInputStream(is);
 							JSONObject json=(JSONObject) ois.readObject();
-							String data=json.get("type").toString();
-							String[] strArr=data.split("//");
-							if (strArr[0].equals("id")) {
-								setUserName(strArr[1]);
-								ids.add(strArr[1]);
-							}
+							
+							String typeCheck=null;
+							typeProcess(json);
 							
 							// 클라이언트한테 전달받은 메시지 처리
-							receiveMessageProcess(data);
+							//receiveMessageProcess(json);
 						
 						}
 					} catch (Exception e) {
@@ -202,13 +199,15 @@ public class ServerController implements Initializable {
 							String message = "[2.클라이언트 통신 안됨: " + socket.getRemoteSocketAddress() + ": "
 									+ Thread.currentThread().getName() + "]";
 							Platform.runLater(() -> serverLogText(message));
-
-							
-							String connList=getConnectedList();
-							for(Client client:connections) {
-								client.send(connList);
+				
+							//연결 리스트 뿌려줘야됨
+							JSONObject sendJson=new JSONObject();
+							sendJson.put("type", "connList");
+							sendJson.put("content", getConnectedList());
+							System.out.println(getConnectedList());
+							for(Client c:connections) {
+								c.send(sendJson);
 							}
-							
 
 							socket.close();
 						} catch (IOException e2) {
@@ -219,22 +218,16 @@ public class ServerController implements Initializable {
 			executorService.submit(runnable);
 		}
 
-		void send(String data) {
+		void send(JSONObject data) {
 			Runnable runnable = new Runnable() {
 				@SuppressWarnings("unchecked")
 				@Override
 				public void run() {
 					try {
-					
-						JSONObject json=new JSONObject();
-						json.put("type", data);
-						System.out.println(json.toString());
-						
-						
 						OutputStream outputStream = socket.getOutputStream();
 						ObjectOutputStream oos=new ObjectOutputStream(outputStream);
-		
-						oos.writeObject(json);
+						System.out.println(data.toString());
+						oos.writeObject(data);
 						oos.flush();
 						
 					} catch (Exception e) {
@@ -259,70 +252,89 @@ public class ServerController implements Initializable {
 		String getUserName() {
 			return this.userName;
 		}
-
-		void receiveMessageProcess(String data) throws IOException, SQLException {
-			String[] strArr = data.split("//");
-			switch (strArr[0]) {
-			// 접속자리스트 생성
-			case "id":
-				hm.put(strArr[1], socket.getOutputStream());
-				Platform.runLater(() -> serverLogText(strArr[1] + "님이 접속하셨습니다."));
+		@SuppressWarnings("unchecked")
+		void typeProcess(JSONObject json) throws IOException, SQLException {
+			String typeCheck=json.get("type").toString();
+			if(typeCheck.equals("join")) {
+				String username=json.get("content").toString();
+				setUserName(username);
+				ids.add(username);
 				Platform.runLater(() -> connectedListText());
+			
+				JSONObject sendJson=new JSONObject();
+				sendJson.put("type","serverMsg");
+				sendJson.put("content",username+"님 들어오셨습니다.");
+				System.out.println(sendJson.toString());
+				send(sendJson);
 				
-				String connList=getConnectedList();
-				for(Client client:connections) {
-					client.send(connList);
+				
+				//연결 리스트 뿌려줘야됨
+				JSONObject sendJson2=new JSONObject();
+				sendJson2.put("type", "connList");
+				sendJson2.put("content", getConnectedList());
+				System.out.println(getConnectedList());
+				for(Client c:connections) {
+					c.send(sendJson2);
 				}
-
-				break;
-			// 클라이언트가 서버로 메시지를 전달
-			case "send":
-				if (strArr[2].equals("모두에게")) {
+				
+			}
+			else if(typeCheck.equals("send")) {
+				String[] dataArr=json.get("content").toString().split("//");
+				for(int i=0;i<dataArr.length;i++) {
+					System.out.println("인덱스 체크 : "+dataArr[i]);
+				}
+				if (dataArr[1].equals("모두에게")) {
 					for (Client client : connections) {
 						String oUsername=client.getUserName();
 						int oSID=odao.DAO_select_UserId(odb.getConnection(), oUsername);
 						
-						odao.DAO_insert_Reply(odb.getConnection(), Integer.parseInt(strArr[1]), oSID, strArr[3]);
-						client.db.add(strArr[3]);
-						client.send("event//receiveBtn//false//[ 메시지가 도착하였습니다. ]");
+						//conn 누가 , 누구에게 , 메시지
+						odao.DAO_insert_Reply(odb.getConnection(), Integer.parseInt(dataArr[0]), oSID, dataArr[2]);
+						client.db.add(dataArr[2]);
+						JSONObject sendJson=new JSONObject();
+						sendJson.put("type", "event");
+						sendJson.put("content", "receiveBtn//false//[ 메시지가 도착하였습니다. ]");
+						
+						client.send(sendJson);
 					}
 				} else {
-					System.out.println("안들어오냐?");
 					for (Client client : connections) {
-						if (strArr[2].equals(client.getUserName())) {
-							int oSID=odao.DAO_select_UserId(odb.getConnection(), strArr[2]);
-							odao.DAO_insert_Reply(odb.getConnection(), Integer.parseInt(strArr[1]), oSID, strArr[3]);
+						if (dataArr[1].equals(client.getUserName())) {
+							int oSID=odao.DAO_select_UserId(odb.getConnection(), dataArr[1]);
+							odao.DAO_insert_Reply(odb.getConnection(), Integer.parseInt(dataArr[0]), oSID, dataArr[2]);
 								
-							client.db.add(strArr[3]);
-							client.send("event//receiveBtn//false//[ 메시지가 도착하였습니다. ]");
+							client.db.add(dataArr[2]);
+							
+							//client.send("event//receiveBtn//false//[ 메시지가 도착하였습니다. ]");
+							
+							JSONObject sendJson=new JSONObject();
+							sendJson.put("type", "event");
+							sendJson.put("content", "receiveBtn//false//[ 메시지가 도착하였습니다 ]");
+							client.send(sendJson);
 						}
 					}
 				}
-				break;
-			// 클라이언트가 서버에게 메시지 받겠다고 요청
-			case "receive":
+			}else if(typeCheck.equals("receive")) {
 
 				// 자신이 받은 메시지를 전송한다.
 				if (db.isEmpty()) {
-					send("event//receiveBtn//true//전달받은 메시지가 없습니다.");
+					JSONObject sendJson=new JSONObject();
+					sendJson.put("type", "event");
+					sendJson.put("content", "receiveBtn//true//전달받은 메시지가 없습니다.");
+					send(sendJson);
 				}
 				else {
 					String res = db.poll();
+					JSONObject sendJson=new JSONObject();
+					sendJson.put("type", "event");
+					sendJson.put("content", "receiveBtn//true//"+res);
 					
-					if(db.isEmpty()) send("event//receiveBtn//true//"+res);
-					else send("event//receiveBtn//false//"+res);
-					
+					if(db.isEmpty()) send(sendJson);
+					else send(sendJson);
 				}
-				break;
-				// 접속자 리스트 업데이트
-			case "connList":
-				for (Client client : connections) {
-					client.send(data);
-				}
-				break;
+				
 			}
 		}
-
 	}
 
 	// 서버 로그창 기록 메소드
@@ -339,16 +351,14 @@ public class ServerController implements Initializable {
 			connectionList.appendText(userID + "\n");
 		}
 	}
-
 	//서버 접속자 가져오기
-	String getConnectedList() {
-		String res = "connList//";
-		Iterator<String> keys = ids.iterator();
-		while (keys.hasNext()) {
-			String userID = keys.next();
-			res += userID + "//";
+		String getConnectedList() {
+			String res = "connList//";
+			Iterator<String> keys = ids.iterator();
+			while (keys.hasNext()) {
+				String userID = keys.next();
+				res += userID + "//";
+			}
+			return res;
 		}
-		return res;
-	}
-
 }
