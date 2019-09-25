@@ -1,7 +1,11 @@
 package Client;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -11,6 +15,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.ResourceBundle;
 import java.util.Set;
+
+import org.json.simple.JSONObject;
 
 import DB.DAOFactory;
 import OracleDAO.OracleDAO;
@@ -163,7 +169,7 @@ public class ClientController implements Initializable {
 					socket = new Socket();
 
 					String userId;
-
+					
 					userId = stringProcess("id", userIdInput.getText());
 					// 서버 연결 시도 서버 연결 성공
 					if (userIdInput.getText().length() != 0 && !userIdInput.getText().equals("아이디 입력")) {
@@ -219,22 +225,20 @@ public class ClientController implements Initializable {
 	}
 
 	// 서버로부터 메시지를 전달받는 메소드
+	//JSON 방식으로 데이터를 받기
 	void receive() {
 		while (true) {
 			try {
-				byte[] byteArr = new byte[100];
-				InputStream inputStream = socket.getInputStream();
-
-				// 서버가 비정상적으로 종료했을 경우 IOException 발생
-				int readByteCount = inputStream.read(byteArr);
-
-				// 서버가 정상적으로 Socket의 close()를 호출했을 경우
-				if (readByteCount == -1) {
-					throw new IOException();
-				}
 				
-				String data = new String(byteArr, 0, readByteCount, "UTF-8");
-				String[] strArr = data.split("//");
+				
+				InputStream is=socket.getInputStream();
+				ObjectInputStream ois=new ObjectInputStream(is);
+				JSONObject json=(JSONObject) ois.readObject();
+				String data=json.get("type").toString();
+	
+				
+				
+				String[] strArr=data.split("//");
 				
 				for(int i=0;i<strArr.length;i++) {
 					System.out.println(strArr[i]);
@@ -264,15 +268,29 @@ public class ClientController implements Initializable {
 	}
 	
 	// 서버로 메시지를 전송하는 메소드
+	// JSON 방식으로 보내기
 	void send(String data) {
 		Thread thread = new Thread() {
+			@SuppressWarnings("unchecked")
 			@Override
 			public void run() {
 				try {
-					byte[] byteArr = data.getBytes("UTF-8");
+					
+					
+					
+					
+					JSONObject json=new JSONObject();
+					json.put("type", data);
+					System.out.println(json.toString());
+					
+					
+					//byte[] byteArr = data.getBytes("UTF-8");
 					OutputStream outputStream = socket.getOutputStream();
-					outputStream.write(byteArr);
-					outputStream.flush();
+					ObjectOutputStream oos=new ObjectOutputStream(outputStream);
+	
+					oos.writeObject(json);
+					oos.flush();
+					
 					Platform.runLater(() -> displayText("[보내기 완료]"));
 				} catch (Exception e) {
 					Platform.runLater(() -> displayText("[서버 통신 안됨]"));

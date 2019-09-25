@@ -2,11 +2,15 @@ package Server;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,6 +23,8 @@ import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import org.json.simple.JSONObject;
 
 import OracleDAO.OracleDAO;
 import OracleDAO.OracleDBConnection;
@@ -97,7 +103,8 @@ public class ServerController implements Initializable {
 						Platform.runLater(() -> serverLogText(message));
 						Client client = new Client(socket);
 						connections.add(client);
-
+						
+						
 						
 						String connList=getConnectedList();
 						for(Client c:connections) {
@@ -163,24 +170,14 @@ public class ServerController implements Initializable {
 				public void run() {
 					try {
 						while (true) {
-							byte[] byteArr = new byte[100];
-							InputStream inputStream = socket.getInputStream();
-
-							// 클라이언트가 비저상 종료를 했을 경우 IOException 발생
-							int readByteCount = inputStream.read(byteArr);
-
-							// 클라이언트가 정상적으로 Socket의 close()를 호출했을 경우
-							if (readByteCount == -1) {
-								throw new IOException();
-							}
-
-							String message = "[요청 처리: " + socket.getRemoteSocketAddress() + ": "
-									+ Thread.currentThread().getName() + "]";
-							Platform.runLater(() -> serverLogText(message));
-
-							String data = new String(byteArr, 0, readByteCount, "UTF-8");
-
-							String[] strArr = data.split("//");
+							System.out.println("테스트 1");
+					
+							
+							InputStream is=socket.getInputStream();
+							ObjectInputStream ois=new ObjectInputStream(is);
+							JSONObject json=(JSONObject) ois.readObject();
+							String data=json.get("type").toString();
+							String[] strArr=data.split("//");
 							if (strArr[0].equals("id")) {
 								setUserName(strArr[1]);
 								ids.add(strArr[1]);
@@ -188,7 +185,7 @@ public class ServerController implements Initializable {
 							
 							// 클라이언트한테 전달받은 메시지 처리
 							receiveMessageProcess(data);
-
+						
 						}
 					} catch (Exception e) {
 						try {
@@ -224,13 +221,22 @@ public class ServerController implements Initializable {
 
 		void send(String data) {
 			Runnable runnable = new Runnable() {
+				@SuppressWarnings("unchecked")
 				@Override
 				public void run() {
 					try {
-						byte[] byteArr = data.getBytes("UTF-8");
+					
+						JSONObject json=new JSONObject();
+						json.put("type", data);
+						System.out.println(json.toString());
+						
+						
 						OutputStream outputStream = socket.getOutputStream();
-						outputStream.write(byteArr);
-						outputStream.flush();
+						ObjectOutputStream oos=new ObjectOutputStream(outputStream);
+		
+						oos.writeObject(json);
+						oos.flush();
+						
 					} catch (Exception e) {
 						try {
 							String message = "[3.클라이언트 통신 안됨: " + socket.getRemoteSocketAddress() + ": "
