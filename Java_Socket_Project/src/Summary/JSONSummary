@@ -1,0 +1,21 @@
+key,value
+
+1. 콤보박스에 유저 목록 업데이트 
+type,connList
+content, id//id//id//....
+
+2. 클라이언트 버튼 설정과 메시지 전달
+type, event
+content, 버튼아이디//활성|비활성 상태//전달메시지
+
+3. 클라이언트가 접속했을 때
+type,join
+content, 유저아이디
+
+4.클라이언트 A가 클라이언트 B에게 메시지 전달하겠다고 서버에게 전달
+type,send
+content, A 누가(세션아이디)//B 누구에게(유저이름)//메시지
+
+5. 서버한테 전달받은 메시지를 달라고 요청
+type,receive
+content, 누구(세션아이디)

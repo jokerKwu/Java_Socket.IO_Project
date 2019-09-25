@@ -23,31 +23,30 @@ public class OracleDAO {
 	public int DAO_select_UserId(Connection conn, String username) throws SQLException {
 		int user_id = -1;
 		try {
-			//아이디 있는지 체크하고
+			// 아이디 있는지 체크하고
 			String query = "select * from user_tbl where username=?";
-			pstmt=conn.prepareStatement(query);
+			pstmt = conn.prepareStatement(query);
 			pstmt.setString(1, username);
-			rs=pstmt.executeQuery();
+			rs = pstmt.executeQuery();
 			while (rs.next()) {
 				user_id = rs.getInt("user_id");
 			}
 			if (user_id != -1) {
 				return user_id;
 			} else {
-				System.out.println("테스트 1");
 				String query1 = "insert into user_tbl values(AUTO_INCREMENT.nextval,?)";
 
 				pstmt = conn.prepareStatement(query1);
 
 				pstmt.setString(1, username);
 				pstmt.executeUpdate();
-				
-				String query2="select * from user_tbl where username=?";
-				pstmt=conn.prepareStatement(query2);
+
+				String query2 = "select * from user_tbl where username=?";
+				pstmt = conn.prepareStatement(query2);
 				pstmt.setString(1, username);
-				rs=pstmt.executeQuery();
-				while(rs.next()) {
-					user_id=rs.getInt(1);
+				rs = pstmt.executeQuery();
+				while (rs.next()) {
+					user_id = rs.getInt(1);
 					break;
 				}
 			}
@@ -55,10 +54,12 @@ public class OracleDAO {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} finally {
-			if(rs!=null)
+			if (rs != null)
 				rs.close();
-			if(pstmt!=null) pstmt.close();
-			if(st!=null) st.close();
+			if (pstmt != null)
+				pstmt.close();
+			if (st != null)
+				st.close();
 		}
 		return user_id;
 	}
@@ -98,65 +99,143 @@ public class OracleDAO {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} finally {
-			rs.close();
-			st.close();
+			if (pstmt != null)
+				pstmt.close();
+			if (rs != null)
+				rs.close();
+			if (st != null)
+				st.close();
 		}
 	}
 
 	// 대화 마지막 문장 가져오는 메소드
 	public String DAO_select_lastReply(Connection conn, int user_id) throws SQLException {
-		String query = "select reply from conversation_reply_tbl where rownum=1 and user_id_fk=? order by cr_id desc";
-		pstmt = conn.prepareStatement(query);
-		pstmt.setInt(1, user_id);
-
-		rs = pstmt.executeQuery();
 		String answer = null;
+		try {
+			String query = "select reply from conversation_reply_tbl where rownum=1 and user_id_fk=? order by cr_id desc";
+			pstmt = conn.prepareStatement(query);
+			pstmt.setInt(1, user_id);
 
-		while (rs.next()) {
-			answer = rs.getString(1);
-			break;
+			rs = pstmt.executeQuery();
+
+			while (rs.next()) {
+				answer = rs.getString(1);
+				break;
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			if (pstmt != null)
+				pstmt.close();
+			if (rs != null)
+				rs.close();
+			if (st != null)
+				st.close();
 		}
-
 		return answer;
 	}
+	
+	//자기가 받은 마지막 메시지 저장
+	public void DAO_insert_lastReceiveSaveConversation(Connection conn,int user_id) throws SQLException{
+		int user_from=0;
+		int c_id = 0;
+		try {
+			String query1 = "select c_id,user_from from conversation_tbl where user_to=? order by c_id desc";
+			pstmt = conn.prepareStatement(query1);
+			pstmt.setInt(1, user_id);
 
-	// 특정 대화를 저장한다.
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				c_id = rs.getInt(1);
+				user_from = rs.getInt(2);
+				break;
+			}
+			String query2="select cr_id,reply from conversation_reply_tbl where c_id_fk=? and user_id_fk=?"; 
+			pstmt=conn.prepareStatement(query2);
+			pstmt.setInt(1, c_id);
+			pstmt.setInt(2, user_from);
+		
+			rs=pstmt.executeQuery();
+			int cr_id=0;
+			String reply="";
+			while(rs.next()) {
+				cr_id=rs.getInt(1);
+				reply=rs.getString(2);
+				break;
+			}
+			System.out.println(cr_id+" "+reply);
+			// 해당 유저에 마지막 대화 cr_id와 대화를 받아왔다.
+
+			String query3 = "insert into conversation_save_tbl values(auto_increment.nextval,?,?,'2019-09-24')";
+			pstmt = conn.prepareStatement(query3);
+			pstmt.setString(1, reply);
+			pstmt.setInt(2, cr_id);
+
+			pstmt.executeUpdate();
+
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			if (pstmt != null)
+				pstmt.close();
+			if (rs != null)
+				rs.close();
+			if (st != null)
+				st.close();
+		}
+	}
+	// 자기 보낸  대화 마지막꺼를 저장한다.
 	public void DAO_insert_saveConversation(Connection conn, int user_id) throws SQLException {
+
 		String reply = null;
 		int cr_id = 0;
-		// 유저 아이디에 해당되는 마지막 문장을 불러오자
-		String query1 = "select cr_id,reply from conversation_reply_tbl where rownum=1 and user_id_fk=? order by cr_id desc";
-		pstmt = conn.prepareStatement(query1);
-		pstmt.setInt(1, user_id);
+		try {
+			// 유저 아이디에 해당되는 마지막 문장을 불러오자
+			String query1 = "select cr_id,reply from conversation_reply_tbl where rownum=1 and user_id_fk=? order by cr_id desc";
+			pstmt = conn.prepareStatement(query1);
+			pstmt.setInt(1, user_id);
 
-		rs = pstmt.executeQuery();
-		while (rs.next()) {
-			cr_id = rs.getInt(1);
-			reply = rs.getString(2);
-			break;
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				cr_id = rs.getInt(1);
+				reply = rs.getString(2);
+				break;
+			}
+
+			// 해당 유저에 마지막 대화 cr_id와 대화를 받아왔다.
+
+			String query2 = "insert into conversation_save_tbl values(auto_increment.nextval,?,?,'2019-09-24')";
+			pstmt = conn.prepareStatement(query2);
+			pstmt.setString(1, reply);
+			pstmt.setInt(2, cr_id);
+
+			pstmt.executeUpdate();
+
+			String query3 = "select * from conversation_save_tbl";
+			pstmt = conn.prepareStatement(query3);
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				int scs_id = rs.getInt(1);
+				String sreply = rs.getString(2);
+				int scr_id_fk = rs.getInt(3);
+				String time = rs.getString(4);
+
+				System.out.println(scs_id + " " + sreply + " " + scr_id_fk + " " + time);
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			if (pstmt != null)
+				pstmt.close();
+			if (rs != null)
+				rs.close();
+			if (st != null)
+				st.close();
 		}
-
-		// 해당 유저에 마지막 대화 cr_id와 대화를 받아왔다.
-
-		String query2 = "insert into conversation_save_tbl values(auto_increment.nextval,?,?,'2019-09-24')";
-		pstmt = conn.prepareStatement(query2);
-		pstmt.setString(1, reply);
-		pstmt.setInt(2, cr_id);
-
-		pstmt.executeUpdate();
-
-		String query3 = "select * from conversation_save_tbl";
-		pstmt = conn.prepareStatement(query3);
-		rs = pstmt.executeQuery();
-		while (rs.next()) {
-			int scs_id = rs.getInt(1);
-			String sreply = rs.getString(2);
-			int scr_id_fk = rs.getInt(3);
-			String time = rs.getString(4);
-
-			System.out.println(scs_id + " " + sreply + " " + scr_id_fk + " " + time);
-		}
-
 	}
 
 }

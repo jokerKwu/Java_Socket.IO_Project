@@ -41,23 +41,22 @@ public class ServerController implements Initializable {
 	@FXML
 	private TextArea connectionList;
 
-	
 	ExecutorService executorService;
 	ServerSocket serverSocket;
 	List<Client> connections = new Vector<Client>();
 	HashMap<String, OutputStream> hm = new HashMap<String, OutputStream>();
 	Set<String> ids = new HashSet<String>();
-	
+
 	private OracleDBConnection odb;
 	private OracleDAO odao;
-	
+
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 
 		serverBtn.setOnAction(event -> handleServerBtnAction(event));
-		
-		odb=OracleDBConnection.getInstance();
-		odao=OracleDAO.getInstance();
+
+		odb = OracleDBConnection.getInstance();
+		odao = OracleDAO.getInstance();
 
 	}
 
@@ -76,7 +75,7 @@ public class ServerController implements Initializable {
 		try {
 			serverSocket = new ServerSocket();
 			serverSocket.bind(new InetSocketAddress("localhost", 5001));
-			
+
 		} catch (Exception e) {
 			if (!serverSocket.isClosed()) {
 				stopServer();
@@ -101,18 +100,18 @@ public class ServerController implements Initializable {
 								+ Thread.currentThread().getName() + "]";
 						Platform.runLater(() -> serverLogText(message));
 						Client client = new Client(socket);
-						
+
 						connections.add(client);
-						
-						//연결 리스트 뿌려줘야됨
-						JSONObject sendJson=new JSONObject();
+
+						// 연결 리스트 뿌려줘야됨
+						JSONObject sendJson = new JSONObject();
 						sendJson.put("type", "connList");
 						sendJson.put("content", getConnectedList());
 						System.out.println(getConnectedList());
-						for(Client c:connections) {
+						for (Client c : connections) {
 							c.send(sendJson);
 						}
-						
+
 						Platform.runLater(() -> serverLogText("[연결 개수: " + connections.size() + "]"));
 					} catch (Exception e) {
 						if (!serverSocket.isClosed()) {
@@ -157,8 +156,7 @@ public class ServerController implements Initializable {
 		Socket socket; // 서버와 통신할 소켓
 		String userName;
 		Queue<String> db = new LinkedList<String>();
-		
-		
+
 		Client(Socket socket) {
 			this.socket = socket; // 서버와 통신할 소켓 저장
 			receive(); // 메시지 받는다.
@@ -173,25 +171,24 @@ public class ServerController implements Initializable {
 				public void run() {
 					try {
 						while (true) {
-							InputStream is=socket.getInputStream();
-							ObjectInputStream ois=new ObjectInputStream(is);
-							JSONObject json=(JSONObject) ois.readObject();
-							
-							String typeCheck=null;
+							InputStream is = socket.getInputStream();
+							ObjectInputStream ois = new ObjectInputStream(is);
+							JSONObject json = (JSONObject) ois.readObject();
+
+							String typeCheck = null;
 							typeProcess(json);
-							
+
 							// 클라이언트한테 전달받은 메시지 처리
-							//receiveMessageProcess(json);
-						
+							// receiveMessageProcess(json);
+
 						}
 					} catch (Exception e) {
 						try {
 
-							//클라이언트가 종료됐을때
+							// 클라이언트가 종료됐을때
 
 							hm.remove(Client.this.getUserName());
 							ids.remove(Client.this.getUserName());
-							
 
 							connections.remove(Client.this);
 
@@ -199,13 +196,13 @@ public class ServerController implements Initializable {
 							String message = "[2.클라이언트 통신 안됨: " + socket.getRemoteSocketAddress() + ": "
 									+ Thread.currentThread().getName() + "]";
 							Platform.runLater(() -> serverLogText(message));
-				
-							//연결 리스트 뿌려줘야됨
-							JSONObject sendJson=new JSONObject();
+
+							// 연결 리스트 뿌려줘야됨
+							JSONObject sendJson = new JSONObject();
 							sendJson.put("type", "connList");
 							sendJson.put("content", getConnectedList());
 							System.out.println(getConnectedList());
-							for(Client c:connections) {
+							for (Client c : connections) {
 								c.send(sendJson);
 							}
 
@@ -225,11 +222,11 @@ public class ServerController implements Initializable {
 				public void run() {
 					try {
 						OutputStream outputStream = socket.getOutputStream();
-						ObjectOutputStream oos=new ObjectOutputStream(outputStream);
+						ObjectOutputStream oos = new ObjectOutputStream(outputStream);
 						System.out.println(data.toString());
 						oos.writeObject(data);
 						oos.flush();
-						
+
 					} catch (Exception e) {
 						try {
 							String message = "[3.클라이언트 통신 안됨: " + socket.getRemoteSocketAddress() + ": "
@@ -252,87 +249,87 @@ public class ServerController implements Initializable {
 		String getUserName() {
 			return this.userName;
 		}
+
 		@SuppressWarnings("unchecked")
 		void typeProcess(JSONObject json) throws IOException, SQLException {
-			String typeCheck=json.get("type").toString();
-			if(typeCheck.equals("join")) {
-				String username=json.get("content").toString();
+			String typeCheck = json.get("type").toString();
+			if (typeCheck.equals("join")) {
+				String username = json.get("content").toString();
 				setUserName(username);
 				ids.add(username);
 				Platform.runLater(() -> connectedListText());
-			
-				JSONObject sendJson=new JSONObject();
-				sendJson.put("type","serverMsg");
-				sendJson.put("content",username+"님 들어오셨습니다.");
+
+				JSONObject sendJson = new JSONObject();
+				sendJson.put("type", "serverMsg");
+				sendJson.put("content", username + "님 들어오셨습니다.");
 				System.out.println(sendJson.toString());
 				send(sendJson);
-				
-				
-				//연결 리스트 뿌려줘야됨
-				JSONObject sendJson2=new JSONObject();
+
+				// 연결 리스트 뿌려줘야됨
+				JSONObject sendJson2 = new JSONObject();
 				sendJson2.put("type", "connList");
 				sendJson2.put("content", getConnectedList());
 				System.out.println(getConnectedList());
-				for(Client c:connections) {
+				for (Client c : connections) {
 					c.send(sendJson2);
 				}
-				
-			}
-			else if(typeCheck.equals("send")) {
-				String[] dataArr=json.get("content").toString().split("//");
-				for(int i=0;i<dataArr.length;i++) {
-					System.out.println("인덱스 체크 : "+dataArr[i]);
+
+			} else if (typeCheck.equals("send")) {
+				String[] dataArr = json.get("content").toString().split("//");
+				for (int i = 0; i < dataArr.length; i++) {
+					System.out.println("인덱스 체크 : " + dataArr[i]);
 				}
 				if (dataArr[1].equals("모두에게")) {
 					for (Client client : connections) {
-						String oUsername=client.getUserName();
-						int oSID=odao.DAO_select_UserId(odb.getConnection(), oUsername);
-						
-						//conn 누가 , 누구에게 , 메시지
+						String oUsername = client.getUserName();
+						int oSID = odao.DAO_select_UserId(odb.getConnection(), oUsername);
+
+						// conn 누가 , 누구에게 , 메시지
 						odao.DAO_insert_Reply(odb.getConnection(), Integer.parseInt(dataArr[0]), oSID, dataArr[2]);
 						client.db.add(dataArr[2]);
-						JSONObject sendJson=new JSONObject();
+						JSONObject sendJson = new JSONObject();
 						sendJson.put("type", "event");
 						sendJson.put("content", "receiveBtn//false//[ 메시지가 도착하였습니다. ]");
-						
+
 						client.send(sendJson);
 					}
 				} else {
 					for (Client client : connections) {
 						if (dataArr[1].equals(client.getUserName())) {
-							int oSID=odao.DAO_select_UserId(odb.getConnection(), dataArr[1]);
+							int oSID = odao.DAO_select_UserId(odb.getConnection(), dataArr[1]);
 							odao.DAO_insert_Reply(odb.getConnection(), Integer.parseInt(dataArr[0]), oSID, dataArr[2]);
-								
+
 							client.db.add(dataArr[2]);
-							
-							//client.send("event//receiveBtn//false//[ 메시지가 도착하였습니다. ]");
-							
-							JSONObject sendJson=new JSONObject();
+
+							// client.send("event//receiveBtn//false//[ 메시지가 도착하였습니다. ]");
+
+							JSONObject sendJson = new JSONObject();
 							sendJson.put("type", "event");
 							sendJson.put("content", "receiveBtn//false//[ 메시지가 도착하였습니다 ]");
 							client.send(sendJson);
 						}
 					}
 				}
-			}else if(typeCheck.equals("receive")) {
+			} else if (typeCheck.equals("receive")) {
 
 				// 자신이 받은 메시지를 전송한다.
 				if (db.isEmpty()) {
-					JSONObject sendJson=new JSONObject();
+					JSONObject sendJson = new JSONObject();
 					sendJson.put("type", "event");
 					sendJson.put("content", "receiveBtn//true//전달받은 메시지가 없습니다.");
 					send(sendJson);
-				}
-				else {
+				} else {
 					String res = db.poll();
-					JSONObject sendJson=new JSONObject();
+					JSONObject sendJson = new JSONObject();
 					sendJson.put("type", "event");
-					sendJson.put("content", "receiveBtn//true//"+res);
-					
-					if(db.isEmpty()) send(sendJson);
-					else send(sendJson);
+					sendJson.put("content", "receiveBtn//true//" + res);
+
+					if (db.isEmpty())
+						send(sendJson);
+					else
+						send(sendJson);
 				}
-				
+
 			}
 		}
 	}
@@ -351,14 +348,15 @@ public class ServerController implements Initializable {
 			connectionList.appendText(userID + "\n");
 		}
 	}
-	//서버 접속자 가져오기
-		String getConnectedList() {
-			String res = "connList//";
-			Iterator<String> keys = ids.iterator();
-			while (keys.hasNext()) {
-				String userID = keys.next();
-				res += userID + "//";
-			}
-			return res;
+
+	// 서버 접속자 가져오기
+	String getConnectedList() {
+		String res = "connList//";
+		Iterator<String> keys = ids.iterator();
+		while (keys.hasNext()) {
+			String userID = keys.next();
+			res += userID + "//";
 		}
+		return res;
+	}
 }

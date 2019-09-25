@@ -1,0 +1,40 @@
+1. 유저 이름으로 유저 아이디 가져오기
+
+select user_id from user_tbl where username = ?
+//1. username
+
+2. 유저 아이디로 유저 이름 가져오기
+ 
+select username from user_tbl where user_id = ?
+//1. user_id
+
+3. 유저 아이디 삽입하기
+
+insert into user_tbl values(AUTO_INCREMENT.nextval,?)
+//1. username
+
+4. 대화 삽입하기
+
+insert into conversation_tbl values(auto_increment.nextval,?,?,'2019-09-23')
+//1. user_from 2. user_to
+
+select c_id from conversation_tbl where rownum=1 and (user_from=? and user_to=?) order by c_id desc
+//1. user_from 2. user_to
+
+insert into conversation_reply_tbl values(auto_increment.nextval,?,?,'2019-09-24',?)
+//1. reply 2. user_from  3.c_id_fk
+
+
+5. 해당 유저에 마지막 대화 가져오기
+
+select cr_id,time,reply from conversation_reply_tbl where rownum=1 and user_id_fk=? order by cr_id desc;
+//1. user_id
+
+
+6. 현재 클라이언트가 받은 마지막 메시지를 저장한다.
+
+select c_id,user_from from conversation_tbl where user_to=?;
+//1. user_id
+
+select cr_id,reply from conversation_reply_tbl where c_id_fk=? and user_id_fk=?;
+//1.c_id  2.user_from

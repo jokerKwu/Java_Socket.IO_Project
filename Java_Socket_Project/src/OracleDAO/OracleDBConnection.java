@@ -27,10 +27,9 @@ public class OracleDBConnection {
 			System.out.println("드라이버 로딩 성공");
 			
 		}catch(ClassNotFoundException e) {
-			e.printStackTrace();
+			e.printStackTrace();	
 		}
-		}
-	
+	}
 	
 	public OracleDBConnection() {
 		
@@ -54,6 +53,7 @@ public class OracleDBConnection {
 			}catch(SQLException e) {
 				System.out.println("디비 접속 실패");
 				e.printStackTrace();
+				getDisconnect();
 			}
 			return conn;
 		}
